@@ -10,7 +10,7 @@
          {% if bound_field.hidden %}
             {% field_widget bound_field %}
          {% else %}
-            {% ifequal bound_field.field.name "language" %}
+            {% ifequal bound_field.field.name "language_id" %}
                <input type="hidden" name="{{ bound_field.form_fields.0.formfield.field_name }}" value="{{ forloop.parentloop.counter }}" />
             {% else %}
                {% admin_field_line bound_field %}
