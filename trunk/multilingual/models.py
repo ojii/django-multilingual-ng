@@ -277,6 +277,11 @@ def multilingual_modelbase_new(cls, name, bases, attrs):
         # translation fields.  Ideally this should not be necessary, so
         # that it would still be possible to use a custom manager here.
         attrs['objects'] = MultilingualModelManager()
+
+        # Override the admin manager as well, or the admin views will
+        # not see the translation data.
+        if 'Admin' in attrs:
+            attrs['Admin'].manager = attrs['objects']
         
         attrs['Translation'].contribute_to_class = classmethod(translation_contribute_to_class)
     return _old_new(cls, name, bases, attrs)
