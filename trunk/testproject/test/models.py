@@ -65,6 +65,7 @@ Test models for the multilingual library.
 
 from django.db import models
 from django.contrib.auth.models import User
+from multilingual.models import TranslationDoesNotExist
 
 class Category(models.Model):
     """
@@ -97,7 +98,7 @@ class Category(models.Model):
     def __str__(self):
         # note that you can use name and description fields as usual
         try:
-            return self.name
+            return str(self.name)
         except TranslationDoesNotExist:
             return "-not-available-"
     
