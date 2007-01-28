@@ -272,13 +272,17 @@ def translation_contribute_to_class(cls, main_cls, name):
                     alias = get_translated_field_alias(fname, language_id)
                     translated_fields[alias] = (field, language_id)
                 
+                short_description = getattr(field, 'verbose_name', fname)
+
                 getter = getter_generator(trans_name, fname)
+                getter.short_description = short_description
                 setattr(main_cls, 'get_' + fname, getter)
 
                 setter = setter_generator(trans_name, fname)
                 setattr(main_cls, 'set_' + fname, setter)
 
-                setattr(main_cls, fname, property(getter, setter, doc=fname))
+                prop = property(getter, setter, doc=short_description)
+                setattr(main_cls, fname, prop)
 
         trans_attrs = cls.__dict__.copy()
         trans_attrs['Meta'] = TransMeta

@@ -118,9 +118,12 @@ class Category(models.Model):
     """
     
     # First, some fields that do not need translations
-    creator = models.ForeignKey(User, blank=True, null=True)
-    created = models.DateTimeField(auto_now_add=True)
-    parent = models.ForeignKey('self', blank=True, null=True)
+    creator = models.ForeignKey(User, verbose_name=_("Created by"),
+                                blank=True, null=True)
+    created = models.DateTimeField(verbose_name=_("Created at"),
+                                   auto_now_add=True)
+    parent = models.ForeignKey('self', verbose_name=_("Parent category"),
+                               blank=True, null=True)
 
     # And now the translatable fields
     class Translation:
@@ -137,8 +140,10 @@ class Category(models.Model):
          * name and description properties using the methods above
         """
 
-        name = models.CharField(blank=True, null=False, maxlength=250)
-        description = models.TextField(blank=True, null=False)
+        name = models.CharField(verbose_name=_("The name"),
+                                blank=True, null=False, maxlength=250)
+        description = models.TextField(verbose_name=_("The description"),
+                                       blank=True, null=False)
 
     def __str__(self):
         # note that you can use name and description fields as usual
@@ -148,8 +153,10 @@ class Category(models.Model):
             return "-not-available-"
     
     class Admin:
-        # again, field names just work
-        list_display = ('name', 'description')
+        # Again, field names would just work here, but if you need
+        # correct list headers (from field.verbose_name) you have to
+        # use the get_'field_name' functions here.
+        list_display = ('creator', 'created', 'get_name', 'get_description')
         search_fields = ('name_en',)
 
     class Meta:
