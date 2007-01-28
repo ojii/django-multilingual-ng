@@ -61,6 +61,51 @@ Test models for the multilingual library.
 >>> [c.name for c in  Category.objects.all().order_by('name_en')]
 ['cat 1', 'category 2']
 
+### Check ordering
+
+# start with renaming one of the categories so that the order actually
+# depends on the default language
+
+>>> set_default_language(1)
+>>> c = Category.objects.get(name='cat 1')
+>>> c.name = 'zzz cat 1'
+>>> c.save()
+
+>>> [c.name for c in  Category.objects.all().order_by('name_en')]
+['category 2', 'zzz cat 1']
+>>> [c.name for c in  Category.objects.all().order_by('name')]
+['category 2', 'zzz cat 1']
+>>> [c.name for c in  Category.objects.all().order_by('-name')]
+['zzz cat 1', 'category 2']
+
+>>> set_default_language(2)
+>>> [c.name for c in  Category.objects.all().order_by('name')]
+['kat 1', 'kategoria 2']
+>>> [c.name for c in  Category.objects.all().order_by('-name')]
+['kategoria 2', 'kat 1']
+
+### Check filtering
+
+>>> set_default_language(1)
+>>> [c.name for c in  Category.objects.all().filter(name__contains='2')]
+['category 2']
+
+>>> set_default_language(1)
+>>> [c.name for c in  Category.objects.all().filter(name_en__contains='2')]
+['category 2']
+
+>>> set_default_language(1)
+>>> [c.name for c in  Category.objects.all().filter(name_pl__contains='kat')]
+['zzz cat 1', 'category 2']
+
+>>> set_default_language(2)
+>>> [c.name for c in  Category.objects.all().filter(name__contains='k')]
+['kat 1', 'kategoria 2']
+
+>>> set_default_language(2)
+>>> [c.name for c in  Category.objects.all().filter(name__contains='kategoria')]
+['kategoria 2']
+
 """
 
 from django.db import models
@@ -105,6 +150,7 @@ class Category(models.Model):
     class Admin:
         # again, field names just work
         list_display = ('name', 'description')
+        search_fields = ('name_en',)
 
     class Meta:
         verbose_name_plural = 'categories'

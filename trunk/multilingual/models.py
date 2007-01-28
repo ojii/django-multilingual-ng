@@ -7,7 +7,8 @@ from django.db.models.base import ModelBase
 from django.dispatch.dispatcher import connect
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import signals
-from django.db.models.query import QuerySet
+from django.db.models.query import QuerySet, get_where_clause
+import sys
 
 # This is ugly, ideally languages should be taken from the DB or
 # settings file.  Oh well, it is a prototype anyway.
@@ -26,10 +27,10 @@ class TranslationDoesNotExist(Exception):
     pass
 
 def get_language_code(language_id):
-    return LANGUAGES[language_id - 1][0]
+    return LANGUAGES[(language_id or DEFAULT_LANGUAGE) - 1][0]
 
 def get_language_name(language_id):
-    return LANGUAGES[language_id - 1][1]
+    return LANGUAGES[(language_id or DEFAULT_LANGUAGE) - 1][1]
 
 def get_language_id_list():
     return range(1, LANGUAGE_CNT + 1)
@@ -44,6 +45,7 @@ class TransBoundRelatedObject(StackedBoundRelatedObject):
         return "admin/edit_inline_translations.html"
 
 from django.utils.datastructures import SortedDict
+from django.db import backend
 
 class QAddTranslationData(object):
     """
@@ -68,11 +70,70 @@ class QAddTranslationData(object):
         for language_id in get_language_id_list():
             table_alias = get_translation_table_alias(trans_table_name,
                                                       language_id)
-            condition = ('((%s.master_id = %s.id) AND (%s.language_id = %%s))'
-                         % (table_alias, master_table_name, table_alias))
+            condition = ('((%s.master_id = %s.id) AND (%s.language_id = %s))'
+                         % (table_alias, master_table_name, table_alias,
+                            language_id))
             joins[table_alias] = (trans_table_name, 'LEFT JOIN', condition)
-            params.append(language_id)
         return joins, where, params
+
+class MultilingualModelQuerySet(QuerySet):
+    """
+    A specialized QuerySet that knows how to handla translatable
+    fields in ordering and filtering methods.
+    """
+
+    def order_by(self, *field_names):
+        """
+        Override order_by to rename some of the arguments
+        """
+        translated_fields = self.model._meta.translation_model._meta.translated_fields
+
+        new_field_names = []
+        for field_name in field_names:
+            prefix = ''
+            if field_name[0] == '-':
+                prefix = '-'
+                field_name = field_name[1:]
+                
+            if field_name in translated_fields:
+                field, language_id = translated_fields[field_name]
+                real_name = get_translated_field_alias(field.attname,
+                                                       language_id)
+                new_field_names.append(prefix + real_name)
+            else:
+                new_field_names.append(prefix + field_name)
+        return super(MultilingualModelQuerySet, self).order_by(*new_field_names)
+
+
+    def _filter_or_exclude(self, mapper, *args, **kwargs):
+        """
+        Override the original _filter_or_exclude to rename some of the
+        arguments.
+
+        TO DO: the way it is implemented right now the translated
+        fields can not be used for filters that would span more
+        tables.
+        """
+
+        clone = self._clone()
+        new_kwargs = {}
+        translated_fields = self.model._meta.translation_model._meta.translated_fields
+        for field_name in kwargs.keys():
+            if "__" in field_name:
+                fname, lookup_type = field_name.split("__", 1)
+            else:
+                fname, lookup_type = field_name, "exact"
+            if fname in translated_fields:
+                field, language_id = translated_fields[fname]
+                real_name = get_translated_field_alias(field.attname, language_id)
+                value = kwargs.pop(field_name)
+                clone._where.append(get_where_clause(lookup_type, "", real_name, value))
+                clone._params.extend(field.get_db_prep_lookup(lookup_type, value))
+            else:
+                new_kwargs[field_name] = kwargs[field_name]
+        return super(MultilingualModelQuerySet, clone)._filter_or_exclude(mapper,
+                                                                          *args,
+                                                                          **new_kwargs)
 
 class MultilingualModelManager(models.Manager):
     """
@@ -94,7 +155,7 @@ class MultilingualModelManager(models.Manager):
 
                 select[field_alias] = table_alias + '.' + fname
 
-        return QuerySet(self.model).filter(QAddTranslationData()).extra(select=select)
+        return MultilingualModelQuerySet(self.model).filter(QAddTranslationData()).extra(select=select)
 
 def set_default_language(language_id):
     """
@@ -113,7 +174,7 @@ def get_default_language():
 def get_translation_table_alias(translation_table_name, language_id):
     return translation_table_name + '_' + get_language_code(language_id)
 
-def get_translated_field_alias(field_name, language_id):
+def get_translated_field_alias(field_name, language_id=None):
     return field_name + '_' + get_language_code(language_id)
 
 
@@ -199,14 +260,17 @@ def translation_contribute_to_class(cls, main_cls, name):
             ordering = ('language_id',)
 
         trans_name = main_cls.__name__ + name
-        translated_fields = []
+        translated_fields = {}
 
         # create get_'field name'(language_id) and set_'field
         # name'(language_id) methods for all the translation fields.
         # Add the 'field name' properties while you're at it, too.
         for fname, field in cls.__dict__.items():
             if isinstance(field, models.fields.Field):
-                translated_fields.append(fname)
+                translated_fields[fname] = (field, None)
+                for language_id in get_language_id_list():
+                    alias = get_translated_field_alias(fname, language_id)
+                    translated_fields[alias] = (field, language_id)
                 
                 getter = getter_generator(trans_name, fname)
                 setattr(main_cls, 'get_' + fname, getter)
