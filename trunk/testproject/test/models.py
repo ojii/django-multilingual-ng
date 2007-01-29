@@ -200,7 +200,7 @@ class Category(models.Model):
         # Again, field names would just work here, but if you need
         # correct list headers (from field.verbose_name) you have to
         # use the get_'field_name' functions here.
-        list_display = ('creator', 'created', 'get_name', 'get_description')
+        list_display = ('creator', 'created', 'name', 'description')
         search_fields = ('name',)
 
     class Meta:

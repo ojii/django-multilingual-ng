@@ -252,6 +252,11 @@ def fill_translation_cache(instance):
             translation = instance._meta.translation_model(**field_data)
             instance._translation_cache[language_id] = translation
 
+class ProxyProperty(property):
+    def __init__(self, fget, fset=None, fdel=None, doc=None):
+        super(ProxyProperty, self).__init__(fget, fset, fdel, doc)
+        self.short_description = doc
+
 def translation_contribute_to_class(cls, main_cls, name):
     """
     Handle the inner 'Translation' class.
@@ -314,7 +319,7 @@ def translation_contribute_to_class(cls, main_cls, name):
                 setter = setter_generator(trans_name, fname)
                 setattr(main_cls, 'set_' + fname, setter)
 
-                prop = property(getter, setter, doc=short_description)
+                prop = ProxyProperty(getter, setter, doc=short_description)
                 setattr(main_cls, fname, prop)
 
         trans_attrs = cls.__dict__.copy()
