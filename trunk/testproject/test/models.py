@@ -201,7 +201,7 @@ class Category(models.Model):
         # correct list headers (from field.verbose_name) you have to
         # use the get_'field_name' functions here.
         list_display = ('creator', 'created', 'name', 'description')
-        search_fields = ('name',)
+        search_fields = ('name', 'description')
 
     class Meta:
         verbose_name_plural = 'categories'
