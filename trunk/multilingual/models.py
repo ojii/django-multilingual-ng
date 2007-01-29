@@ -47,6 +47,71 @@ class TransBoundRelatedObject(StackedBoundRelatedObject):
 from django.utils.datastructures import SortedDict
 from django.db import backend
 
+old_lookup_inner = models.query.lookup_inner
+
+def new_lookup_inner(path, lookup_type, value, opts, table, column):
+    """
+    Patch django.db.models.query.lookup_inner from the outside
+    to recognize the translation fields.
+
+    Ideally this should go into lookup_inner.
+
+    TO DO: new_lookup_inner should be able to automagically add the
+    necessary joins too.  I'll skip it for the time being because
+    QAddTranslationData adds them, which is enough for all lookups
+    starting with translatable fields.
+    """
+
+    # check if there is anything to do for us here.  If not, send it
+    # all back to the original lookup_inner.
+
+    if not hasattr(opts, 'translation_model'):
+        return old_lookup_inner(path, lookup_type, value, opts, table, column)
+
+    sys.stderr.write("PATH: %s OPTS: %s\n" % (path[0], repr(opts)))
+    translation_opts = opts.translation_model._meta
+    if path[0] not in translation_opts.translated_fields:
+        return old_lookup_inner(path, lookup_type, value, opts, table, column)
+
+    # If we got here then path[0] _is_ a translatable field (or a
+    # localised version of one) in a model with translations.
+
+    joins, where, params = SortedDict(), [], []
+
+    name = path.pop(0)
+    current_table = table
+    field, language_id = translation_opts.translated_fields[name]
+    if language_id is None:
+        language_id = get_default_language()
+    translation_table = get_translation_table_alias(translation_opts.db_table,
+                                                    language_id)
+    new_table = (current_table + "__" + translation_table)
+
+    # add the join necessary for the current step
+    qn = backend.quote_name
+    condition = ('((%s.master_id = %s.id) AND (%s.language_id = %s))'
+                 % (new_table, current_table, new_table, language_id))
+    joins[qn(new_table)] = (qn(translation_opts.db_table), 'LEFT JOIN', condition)
+
+    if path:
+        joins2, where2, params2 = \
+                models.query.lookup_inner(path, lookup_type,
+                                          value,
+                                          translation_opts,
+                                          new_table,
+                                          translation_opts.pk.column)
+        joins.update(joins2)
+        where.extend(where2)
+        params.extend(params2)
+    else:
+        trans_table_name = opts.translation_model._meta.db_table
+        where.append(get_where_clause(lookup_type, new_table + '.', field.attname, value))
+        params.extend(field.get_db_prep_lookup(lookup_type, value))
+
+    return joins, where, params
+
+models.query.lookup_inner = new_lookup_inner
+
 class QAddTranslationData(object):
     """
     Extend a queryset with joins and contitions necessary to pull all
@@ -78,7 +143,7 @@ class QAddTranslationData(object):
 
 class MultilingualModelQuerySet(QuerySet):
     """
-    A specialized QuerySet that knows how to handla translatable
+    A specialized QuerySet that knows how to handle translatable
     fields in ordering and filtering methods.
     """
 
@@ -103,37 +168,6 @@ class MultilingualModelQuerySet(QuerySet):
             else:
                 new_field_names.append(prefix + field_name)
         return super(MultilingualModelQuerySet, self).order_by(*new_field_names)
-
-
-    def _filter_or_exclude(self, mapper, *args, **kwargs):
-        """
-        Override the original _filter_or_exclude to rename some of the
-        arguments.
-
-        TO DO: the way it is implemented right now the translated
-        fields can not be used for filters that would span more
-        tables.
-        """
-
-        clone = self._clone()
-        new_kwargs = {}
-        translated_fields = self.model._meta.translation_model._meta.translated_fields
-        for field_name in kwargs.keys():
-            if "__" in field_name:
-                fname, lookup_type = field_name.split("__", 1)
-            else:
-                fname, lookup_type = field_name, "exact"
-            if fname in translated_fields:
-                field, language_id = translated_fields[fname]
-                real_name = get_translated_field_alias(field.attname, language_id)
-                value = kwargs.pop(field_name)
-                clone._where.append(get_where_clause(lookup_type, "", real_name, value))
-                clone._params.extend(field.get_db_prep_lookup(lookup_type, value))
-            else:
-                new_kwargs[field_name] = kwargs[field_name]
-        return super(MultilingualModelQuerySet, clone)._filter_or_exclude(mapper,
-                                                                          *args,
-                                                                          **new_kwargs)
 
 class MultilingualModelManager(models.Manager):
     """

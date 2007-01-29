@@ -2,6 +2,7 @@
 Test models for the multilingual library.
 
 >>> from multilingual.models import set_default_language
+>>> from django.db.models import Q
 >>> set_default_language(1)
 
 ### Create the test data
@@ -86,16 +87,30 @@ Test models for the multilingual library.
 
 ### Check filtering
 
+# Check for filtering defined by Q objects as well.  This is a recent
+# improvement: the translation fields are being handled by an
+# extension of lookup_inner instead of overridden
+# QuerySet._filter_or_exclude
+
 >>> set_default_language(1)
 >>> [c.name for c in  Category.objects.all().filter(name__contains='2')]
 ['category 2']
+
+>>> set_default_language(1)
+>>> [c.name for c in  Category.objects.all().filter(Q(name__contains='2'))]
+['category 2']
+
+>>> set_default_language(1)
+>>> [c.name for c in
+...  Category.objects.all().filter(Q(name__contains='2')|Q(name_pl__contains='kat'))]
+['zzz cat 1', 'category 2']
 
 >>> set_default_language(1)
 >>> [c.name for c in  Category.objects.all().filter(name_en__contains='2')]
 ['category 2']
 
 >>> set_default_language(1)
->>> [c.name for c in  Category.objects.all().filter(name_pl__contains='kat')]
+>>> [c.name for c in  Category.objects.all().filter(Q(name_pl__contains='kat'))]
 ['zzz cat 1', 'category 2']
 
 >>> set_default_language(2)
@@ -103,8 +118,37 @@ Test models for the multilingual library.
 ['kat 1', 'kategoria 2']
 
 >>> set_default_language(2)
->>> [c.name for c in  Category.objects.all().filter(name__contains='kategoria')]
+>>> [c.name for c in  Category.objects.all().filter(Q(name__contains='kategoria'))]
 ['kategoria 2']
+
+
+### Check filtering spanning more than one model
+
+>>> set_default_language(1)
+
+>>> cat_1 = Category.objects.get(name='zzz cat 1')
+>>> cat_2 = Category.objects.get(name='category 2')
+
+>>> a = Article(category=cat_1)
+>>> a.set_title('article 1', 1)
+>>> a.set_title('artykul 1', 2)
+>>> a.set_contents('contents 1', 1)
+>>> a.set_contents('zawartosc 1', 1)
+>>> a.save()
+
+>>> a = Article(category=cat_2)
+>>> a.set_title('article 2', 1)
+>>> a.set_title('artykul 2', 2)
+>>> a.set_contents('contents 2', 1)
+>>> a.set_contents('zawartosc 2', 1)
+>>> a.save()
+
+>>> [a.title for a in Article.objects.filter(category=cat_1)]
+['article 1']
+>>> [a.title for a in Article.objects.filter(category__name=cat_1.name)]
+['article 1']
+>>> [a.title for a in Article.objects.filter(Q(category__name=cat_1.name)|Q(category__name_pl__contains='2')).order_by('-title')]
+['article 2', 'article 1']
 
 """
 
@@ -114,7 +158,7 @@ from multilingual.models import TranslationDoesNotExist
 
 class Category(models.Model):
     """
-    Test model for multilingual content.
+    Test model for multilingual content: a simplified Category.
     """
     
     # First, some fields that do not need translations
@@ -161,3 +205,25 @@ class Category(models.Model):
 
     class Meta:
         verbose_name_plural = 'categories'
+
+class Article(models.Model):
+    """
+    Test model for multilingual content: a simplified article
+    belonging to a single category.
+    """
+
+    # non-translatable fields first
+    creator = models.ForeignKey(User, verbose_name=_("Created by"),
+                                blank=True, null=True)
+    created = models.DateTimeField(verbose_name=_("Created at"),
+                                   auto_now_add=True)
+    category = models.ForeignKey(Category, verbose_name=_("Parent category"),
+                                 blank=True, null=True)
+    
+    # And now the translatable fields
+    class Translation:
+        title = models.CharField(verbose_name=_("The title"),
+                                blank=True, null=False, maxlength=250)
+        contents = models.TextField(verbose_name=_("The contents"),
+                                    blank=True, null=False)
+
