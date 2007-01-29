@@ -68,7 +68,6 @@ def new_lookup_inner(path, lookup_type, value, opts, table, column):
     if not hasattr(opts, 'translation_model'):
         return old_lookup_inner(path, lookup_type, value, opts, table, column)
 
-    sys.stderr.write("PATH: %s OPTS: %s\n" % (path[0], repr(opts)))
     translation_opts = opts.translation_model._meta
     if path[0] not in translation_opts.translated_fields:
         return old_lookup_inner(path, lookup_type, value, opts, table, column)
