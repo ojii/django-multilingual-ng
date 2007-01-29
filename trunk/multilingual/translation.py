@@ -66,9 +66,10 @@ def fill_translation_cache(instance):
             instance._translation_cache[language_id] = translation
 
 class ProxyProperty(property):
-    def __init__(self, fget, fset=None, fdel=None, doc=None):
+    def __init__(self, field_name, fget, fset=None, fdel=None, doc=None):
         super(ProxyProperty, self).__init__(fget, fset, fdel, doc)
         self.short_description = doc
+        self.admin_order_field = field_name
 
 def translation_contribute_to_class(cls, main_cls, name):
     """
@@ -132,7 +133,7 @@ def translation_contribute_to_class(cls, main_cls, name):
                 setter = setter_generator(trans_name, fname)
                 setattr(main_cls, 'set_' + fname, setter)
 
-                prop = ProxyProperty(getter, setter, doc=short_description)
+                prop = ProxyProperty(fname, getter, setter, doc=short_description)
                 setattr(main_cls, fname, prop)
 
         trans_attrs = cls.__dict__.copy()
