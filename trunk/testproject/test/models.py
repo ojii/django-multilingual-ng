@@ -1,7 +1,7 @@
 """
 Test models for the multilingual library.
 
->>> from multilingual.models import set_default_language
+>>> from multilingual import set_default_language
 >>> from django.db.models import Q
 >>> set_default_language(1)
 
@@ -154,7 +154,7 @@ Test models for the multilingual library.
 
 from django.db import models
 from django.contrib.auth.models import User
-from multilingual.models import TranslationDoesNotExist
+from multilingual import TranslationDoesNotExist
 
 class Category(models.Model):
     """
