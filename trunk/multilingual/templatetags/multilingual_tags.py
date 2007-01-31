@@ -9,7 +9,7 @@ import tokenize
 
 register = template.Library()
 
-from multilingual.models import get_language_code, get_language_name
+from multilingual.languages import get_language_code, get_language_name
 
 def language_code(language_id):
     """

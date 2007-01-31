@@ -155,10 +155,14 @@ def translation_contribute_to_class(cls, main_cls, name):
         # create the model with all the translatable fields
         class TransMeta:
             ordering = ('language_id',)
+            # TO DO: for some reason, unique_together does not work
+            # for inline objects.
+            unique_together = (('master', 'language_id'),)
 
         trans_attrs = cls.__dict__.copy()
         trans_attrs['Meta'] = TransMeta
-        trans_attrs['language_id'] = models.IntegerField(blank=False, null=False, core=True)
+        trans_attrs['language_id'] = models.IntegerField(blank=False, null=False, core=True,
+                                                         choices=get_language_choices())
         trans_attrs['master'] = models.ForeignKey(main_cls, blank=False, null=False,
                                                   edit_inline=TransBoundRelatedObject,
                                                   num_in_admin=get_language_count(),
@@ -192,7 +196,7 @@ def translation_contribute_to_class(cls, main_cls, name):
 
             language_id = get_language_id_from_id_or_code(language_id_or_code)
             if language_id is None:
-                language_id = getattr(self, '_default_language')
+                language_id = getattr(self, '_default_language', None)
             if language_id is None:
                 language_id = get_default_language()
 
@@ -221,6 +225,7 @@ def translation_contribute_to_class(cls, main_cls, name):
 def install_translation_library():
     # modify ModelBase.__new__ so that it understands how to handle the
     # 'Translation' inner class
+
     _old_new = ModelBase.__new__
 
     def multilingual_modelbase_new(cls, name, bases, attrs):

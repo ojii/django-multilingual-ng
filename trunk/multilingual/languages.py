@@ -16,13 +16,17 @@ def get_language_count():
     return len(LANGUAGES)
 
 def get_language_code(language_id):
-    return LANGUAGES[(language_id or DEFAULT_LANGUAGE) - 1][0]
+    return LANGUAGES[(int(language_id or DEFAULT_LANGUAGE)) - 1][0]
 
 def get_language_name(language_id):
-    return LANGUAGES[(language_id or DEFAULT_LANGUAGE) - 1][1]
+    return LANGUAGES[(int(language_id or DEFAULT_LANGUAGE)) - 1][1]
 
 def get_language_id_list():
     return range(1, get_language_count() + 1)
+
+def get_language_choices():
+    return [(language_id, get_language_code(language_id))
+            for language_id in get_language_id_list()]
 
 def get_language_id_from_id_or_code(language_id_or_code):
     if language_id_or_code is None:
