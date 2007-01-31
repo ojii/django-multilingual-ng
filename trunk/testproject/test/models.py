@@ -7,9 +7,11 @@ Test models for the multilingual library.
 
 ### Create the test data
 
+# Check both assigning via the proxy properties and set_* functions
+
 >>> c = Category()
->>> c.set_name('category 1', 1)
->>> c.set_name('kategoria 1', 2)
+>>> c.name_en = 'category 1'
+>>> c.name_pl = 'kategoria 1'
 >>> c.save()
 
 >>> c = Category()

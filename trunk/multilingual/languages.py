@@ -39,8 +39,16 @@ def get_default_language():
     return DEFAULT_LANGUAGE
 
 def get_translation_table_alias(translation_table_name, language_id):
+    """
+    Return an alias for the translation table for a given language_id.
+    Used in SQL queries.
+    """
     return translation_table_name + '_' + get_language_code(language_id)
 
 def get_translated_field_alias(field_name, language_id=None):
-    return field_name + '_' + get_language_code(language_id)
+    """
+    Return an alias for field_name field for a given language_id.
+    Used in SQL queries.
+    """
+    return '_trans_' + field_name + '_' + get_language_code(language_id)
 
