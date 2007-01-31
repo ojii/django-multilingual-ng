@@ -11,14 +11,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import signals
 from languages import *
 from manager import MultilingualModelManager
+from exceptions import TranslationDoesNotExist
 
 from django.contrib.admin.templatetags.admin_modify import StackedBoundRelatedObject
-
-class TranslationDoesNotExist(Exception):
-    """
-    The requested translation does not exist
-    """
-    pass
 
 class TransBoundRelatedObject(StackedBoundRelatedObject):
     """
@@ -95,9 +90,9 @@ def translation_contribute_to_class(cls, main_cls, name):
         Generate get_'field name' method for model trans_name,
         field field_name.
         """
-        def get_translation_field(self, language_id=None):
+        def get_translation_field(self, language_id_or_code=None):
             try:
-                return getattr(self.get_translation(language_id), field_name)
+                return getattr(self.get_translation(language_id_or_code), field_name)
             except TranslationDoesNotExist:
                 return "-translation-not-available-"
         get_translation_field.short_description = "get " + field_name
@@ -108,8 +103,8 @@ def translation_contribute_to_class(cls, main_cls, name):
         Generate set_'field name' method for model trans_name,
         field field_name.
         """
-        def set_translation_field(self, value, language_id=None):
-            setattr(self.get_translation(language_id, True),
+        def set_translation_field(self, value, language_id_or_code=None):
+            setattr(self.get_translation(language_id_or_code, True),
                     field_name, value)
         set_translation_field.short_description = "set " + field_name
         return set_translation_field
@@ -182,10 +177,10 @@ def translation_contribute_to_class(cls, main_cls, name):
             """
             return getattr(self, trans_name.lower() + '_set')
 
-        def get_translation(self, language_id,
+        def get_translation(self, language_id_or_code,
                             create_if_necessary=False):
             """
-            Get a translation instance for the given language_id.
+            Get a translation instance for the given language_id_or_code.
 
             If it does not exist, either create one or raise the
             TranslationDoesNotExist exception, depending on the
@@ -195,6 +190,7 @@ def translation_contribute_to_class(cls, main_cls, name):
             # fill the cache if necessary
             self.fill_translation_cache()
 
+            language_id = get_language_id_from_id_or_code(language_id_or_code)
             if language_id is None:
                 language_id = getattr(self, '_default_language')
             if language_id is None:

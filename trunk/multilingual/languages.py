@@ -24,13 +24,28 @@ def get_language_name(language_id):
 def get_language_id_list():
     return range(1, get_language_count() + 1)
 
-def set_default_language(language_id):
+def get_language_id_from_id_or_code(language_id_or_code):
+    if language_id_or_code is None:
+        return None
+    
+    if isinstance(language_id_or_code, int):
+        return language_id_or_code
+
+    i = 0
+    for (code, desc) in LANGUAGES:
+        i += 1
+        if code == language_id_or_code:
+            return i
+    raise LanguageDoesNotExist()
+
+def set_default_language(language_id_or_code):
     """
     Set the default language for the whole translation mechanism.
 
     To do: find a better place to store the value.
     """
     import multilingual.languages
+    language_id = get_language_id_from_id_or_code(language_id_or_code)
     multilingual.languages.DEFAULT_LANGUAGE = language_id
 
 def get_default_language():

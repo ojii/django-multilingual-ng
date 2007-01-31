@@ -1,6 +1,11 @@
 """
 Test models for the multilingual library.
 
+# make sure the settings are right
+>>> from multilingual.languages import LANGUAGES
+>>> LANGUAGES
+[['en', 'English'], ['pl', 'Polish']]
+
 >>> from multilingual import set_default_language
 >>> from django.db.models import Q
 >>> set_default_language(1)
@@ -15,8 +20,8 @@ Test models for the multilingual library.
 >>> c.save()
 
 >>> c = Category()
->>> c.set_name('category 2', 1)
->>> c.set_name('kategoria 2', 2)
+>>> c.set_name('category 2', 'en')
+>>> c.set_name('kategoria 2', 'pl')
 >>> c.save()
 
 ### See if the test data was saved correctly
@@ -43,7 +48,7 @@ Test models for the multilingual library.
 ('kat 1', 'category 1', 'kat 1')
 
 # set language: en
->>> set_default_language(1)
+>>> set_default_language('en')
 >>> c.name = 'cat 1'
 >>> (c.name, c.get_name(1), c.get_name(2))
 ('cat 1', 'cat 1', 'kat 1')
@@ -52,10 +57,10 @@ Test models for the multilingual library.
 # Read the entire Category objects from the DB again to see if
 # everything was saved correctly.
 >>> c = Category.objects.all().order_by('id')[0]
->>> (c.name, c.get_name(1), c.get_name(2))
+>>> (c.name, c.get_name('en'), c.get_name('pl'))
 ('cat 1', 'cat 1', 'kat 1')
 >>> c = Category.objects.all().order_by('id')[1]
->>> (c.name, c.get_name(1), c.get_name(2))
+>>> (c.name, c.get_name('en'), c.get_name('pl'))
 ('category 2', 'category 2', 'kategoria 2')
 
 ### Check ordering
@@ -94,11 +99,11 @@ Test models for the multilingual library.
 # extension of lookup_inner instead of overridden
 # QuerySet._filter_or_exclude
 
->>> set_default_language(1)
+>>> set_default_language('en')
 >>> [c.name for c in  Category.objects.all().filter(name__contains='2')]
 ['category 2']
 
->>> set_default_language(1)
+>>> set_default_language('en')
 >>> [c.name for c in  Category.objects.all().filter(Q(name__contains='2'))]
 ['category 2']
 
@@ -115,16 +120,16 @@ Test models for the multilingual library.
 >>> [c.name for c in  Category.objects.all().filter(Q(name_pl__contains='kat'))]
 ['zzz cat 1', 'category 2']
 
->>> set_default_language(2)
+>>> set_default_language('pl')
 >>> [c.name for c in  Category.objects.all().filter(name__contains='k')]
 ['kat 1', 'kategoria 2']
 
->>> set_default_language(2)
+>>> set_default_language('pl')
 >>> [c.name for c in  Category.objects.all().filter(Q(name__contains='kategoria'))]
 ['kategoria 2']
 
 ### Check specifying query set language
->>> c_en = Category.objects.all().for_language(1)
+>>> c_en = Category.objects.all().for_language('en')
 >>> c_pl = Category.objects.all().for_language(2)
 >>> c_en.get(name__contains='1').name
 'zzz cat 1'

@@ -124,13 +124,13 @@ class MultilingualModelQuerySet(QuerySet):
                 new_field_names.append(prefix + field_name)
         return super(MultilingualModelQuerySet, self).order_by(*new_field_names)
 
-    def for_language(self, language_id):
+    def for_language(self, language_id_or_code):
         """
         Set the default language for all objects returned with this
         query.
         """
         clone = self._clone()
-        clone._default_language = language_id
+        clone._default_language = get_language_id_from_id_or_code(language_id_or_code)
         return clone
 
     def iterator(self):
