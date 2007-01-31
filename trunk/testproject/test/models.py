@@ -129,12 +129,19 @@ Test models for the multilingual library.
 ['kategoria 2']
 
 ### Check specifying query set language
->>> c_en = Category.objects.all().for_language('en')
->>> c_pl = Category.objects.all().for_language(2)
+>>> c_en = Category.objects.all().for_language('en') 
+>>> c_pl = Category.objects.all().for_language(2)  # both ID and code work here
 >>> c_en.get(name__contains='1').name
 'zzz cat 1'
 >>> c_pl.get(name__contains='1').name
 'kat 1'
+
+>>> [c.name for c in  c_en.order_by('name')]
+['category 2', 'zzz cat 1']
+>>> [c.name for c in c_pl.order_by('-name')]
+['kategoria 2', 'kat 1']
+
+
 
 ### Check filtering spanning more than one model
 

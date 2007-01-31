@@ -117,6 +117,8 @@ class MultilingualModelQuerySet(QuerySet):
                 
             if field_name in translated_fields:
                 field, language_id = translated_fields[field_name]
+                if language_id is None:
+                    language_id = getattr(self, '_default_language', None)
                 real_name = get_translated_field_alias(field.attname,
                                                        language_id)
                 new_field_names.append(prefix + real_name)
@@ -144,6 +146,10 @@ class MultilingualModelQuerySet(QuerySet):
             yield obj
 
     def _clone(self, klass=None, **kwargs):
+        """
+        Override _clone to preserve additional information needed by
+        MultilingualModelQuerySet.
+        """
         clone = super(MultilingualModelQuerySet, self)._clone(klass, **kwargs)
         clone._default_language = getattr(self, '_default_language', None)
         return clone
