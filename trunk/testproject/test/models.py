@@ -141,7 +141,15 @@ Test models for the multilingual library.
 >>> [c.name for c in c_pl.order_by('-name')]
 ['kategoria 2', 'kat 1']
 
+>>> c = c_en.get(id=1)
+>>> c.name = 'test'
+>>> (c.name, c.name_en, c.name_pl)
+('test', 'test', 'kat 1')
 
+>>> c = c_pl.get(id=1)
+>>> c.name = 'test'
+>>> (c.name, c.name_en, c.name_pl)
+('test', 'zzz cat 1', 'test')
 
 ### Check filtering spanning more than one model
 
