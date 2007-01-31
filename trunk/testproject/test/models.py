@@ -123,6 +123,13 @@ Test models for the multilingual library.
 >>> [c.name for c in  Category.objects.all().filter(Q(name__contains='kategoria'))]
 ['kategoria 2']
 
+### Check specifying query set language
+>>> c_en = Category.objects.all().for_language(1)
+>>> c_pl = Category.objects.all().for_language(2)
+>>> c_en.get(name__contains='1').name
+'zzz cat 1'
+>>> c_pl.get(name__contains='1').name
+'kat 1'
 
 ### Check filtering spanning more than one model
 

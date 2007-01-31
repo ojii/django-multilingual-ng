@@ -123,3 +123,27 @@ class MultilingualModelQuerySet(QuerySet):
             else:
                 new_field_names.append(prefix + field_name)
         return super(MultilingualModelQuerySet, self).order_by(*new_field_names)
+
+    def for_language(self, language_id):
+        """
+        Set the default language for all objects returned with this
+        query.
+        """
+        clone = self._clone()
+        clone._default_language = language_id
+        return clone
+
+    def iterator(self):
+        """
+        Add the default language information to all returned objects.
+        """
+        default_language = getattr(self, '_default_language', None)
+
+        for obj in super(MultilingualModelQuerySet, self).iterator():
+            obj._default_language = default_language
+            yield obj
+
+    def _clone(self, klass=None, **kwargs):
+        clone = super(MultilingualModelQuerySet, self)._clone(klass, **kwargs)
+        clone._default_language = getattr(self, '_default_language', None)
+        return clone

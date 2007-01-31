@@ -96,8 +96,6 @@ def translation_contribute_to_class(cls, main_cls, name):
         field field_name.
         """
         def get_translation_field(self, language_id=None):
-            if language_id == None:
-                language_id = get_default_language()
             try:
                 return getattr(self.get_translation(language_id), field_name)
             except TranslationDoesNotExist:
@@ -111,8 +109,6 @@ def translation_contribute_to_class(cls, main_cls, name):
         field field_name.
         """
         def set_translation_field(self, value, language_id=None):
-            if language_id == None:
-                language_id = get_default_language()
             setattr(self.get_translation(language_id, True),
                     field_name, value)
         set_translation_field.short_description = "set " + field_name
@@ -198,6 +194,11 @@ def translation_contribute_to_class(cls, main_cls, name):
 
             # fill the cache if necessary
             self.fill_translation_cache()
+
+            if language_id is None:
+                language_id = getattr(self, '_default_language')
+            if language_id is None:
+                language_id = get_default_language()
 
             if language_id not in self._translation_cache:
                 if not create_if_necessary:
