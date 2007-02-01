@@ -162,7 +162,8 @@ def translation_contribute_to_class(cls, main_cls, name):
         trans_attrs = cls.__dict__.copy()
         trans_attrs['Meta'] = TransMeta
         trans_attrs['language_id'] = models.IntegerField(blank=False, null=False, core=True,
-                                                         choices=get_language_choices())
+                                                         choices=get_language_choices(),
+                                                         db_index=True)
         trans_attrs['master'] = models.ForeignKey(main_cls, blank=False, null=False,
                                                   edit_inline=TransBoundRelatedObject,
                                                   num_in_admin=get_language_count(),
