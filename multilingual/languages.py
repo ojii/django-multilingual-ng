@@ -2,15 +2,12 @@
 Django-multilingual: language-related settings and functions.
 """
 
-# This is ugly, ideally languages should be taken from the DB or
-# settings file.  Oh well, it is a prototype anyway.
+#retrieve language settings from settings.py
+from django.conf import settings
+LANGUAGES = settings.LANGUAGES
 
-# It is important that the language identifiers are consecutive
-# numbers starting with 1.
-LANGUAGES = [['en', 'English'], # id=1
-             ['pl', 'Polish']]  # id=2
-
-DEFAULT_LANGUAGE = 1
+#dev-note: it might be nice to define the default language per-model
+DEFAULT_LANGUAGE = settings.DEFAULT_LANGUAGE
 
 def get_language_count():
     return len(LANGUAGES)

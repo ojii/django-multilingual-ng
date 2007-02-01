@@ -25,6 +25,19 @@ TIME_ZONE = 'America/Chicago'
 # http://blogs.law.harvard.edu/tech/stories/storyReader$15
 LANGUAGE_CODE = 'en-us'
 
+# django-multilanguange #####################
+
+# It is important that the language identifiers are consecutive
+# numbers starting with 1.
+
+
+LANGUAGES = [['en', 'English'], # id=1
+             ['pl', 'Polish']]  # id=2
+
+DEFAULT_LANGUAGE = 1
+
+##############################################
+
 SITE_ID = 1
 
 # If you set this to False, Django will make some optimizations so as not
