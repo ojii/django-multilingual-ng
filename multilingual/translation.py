@@ -18,7 +18,39 @@ from django.contrib.admin.templatetags.admin_modify import StackedBoundRelatedOb
 class TransBoundRelatedObject(StackedBoundRelatedObject):
     """
     This class changes the template for translation objects.
+
+    It also reorders the translation list to match the list of
+    languages specified in settings file.
     """
+    def __init__(self, related_object, field_mapping, original):
+        super(TransBoundRelatedObject, self).__init__(related_object,
+                                                      field_mapping,
+                                                      original)
+
+        # reorder field wrappers to match the ordering of languages
+        # specified in settings
+
+        # 1. find corresponding language for each mapping
+        
+        mappings_with_lang = {}
+        mappings_without_lang = []
+        for idx, mapping in self.field_mappings.items():
+            if mapping['original']:
+                mappings_with_lang[mapping['original'].language_id] = idx
+            else:
+                mappings_without_lang.append(idx)
+
+        # 2. reorder the wrappers according to what you found in #1
+
+        new_form_field_collection_wrappers = []
+        ffcw = self.form_field_collection_wrappers
+        for language_id in get_language_id_list():
+            idx = mappings_with_lang.get(language_id, None)
+            if idx is None:
+                idx = mappings_without_lang.pop(0)
+            new_form_field_collection_wrappers.append(ffcw[idx])
+        self.form_field_collection_wrappers = new_form_field_collection_wrappers
+
     def template_name(self):
         return "admin/edit_inline_translations.html"
 
