@@ -234,6 +234,7 @@ class Category(models.Model):
 
     class Meta:
         verbose_name_plural = 'categories'
+        ordering = ('id',)
 
 class Article(models.Model):
     """
