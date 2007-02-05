@@ -183,7 +183,7 @@ Test models for the multilingual library.
 
 from django.db import models
 from django.contrib.auth.models import User
-from multilingual import TranslationDoesNotExist
+import multilingual
 
 class Category(models.Model):
     """
@@ -199,7 +199,7 @@ class Category(models.Model):
                                blank=True, null=True)
 
     # And now the translatable fields
-    class Translation:
+    class Translation(multilingual.Translation):
         """
         The definition of translation model.
 
@@ -222,7 +222,7 @@ class Category(models.Model):
         # note that you can use name and description fields as usual
         try:
             return str(self.name)
-        except TranslationDoesNotExist:
+        except multilingual.TranslationDoesNotExist:
             return "-not-available-"
     
     class Admin:
@@ -251,7 +251,7 @@ class Article(models.Model):
                                  blank=True, null=True)
     
     # And now the translatable fields
-    class Translation:
+    class Translation(multilingual.Translation):
         title = models.CharField(verbose_name=_("The title"),
                                 blank=True, null=False, maxlength=250)
         contents = models.TextField(verbose_name=_("The contents"),

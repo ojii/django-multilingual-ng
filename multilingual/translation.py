@@ -94,11 +94,10 @@ def fill_translation_cache(instance):
             instance._translation_cache[language_id] = translation
 
 class TranslatedFieldProxy(object):
-    def __init__(self, field_name, short_description,
-                 language_id=None):
+    def __init__(self, field_name, alias, field, language_id=None):
         self.field_name = field_name
-        self.short_description = short_description
-        self.admin_order_field = field_name
+        self.field = field
+        self.admin_order_field = alias
         self.language_id = language_id
 
     def __get__(self, obj, objtype=None):
@@ -111,6 +110,8 @@ class TranslatedFieldProxy(object):
         language_id = self.language_id
 
         return getattr(obj, 'set_' + self.field_name)(value, self.language_id)
+
+    short_description = property(lambda self: self.field.short_description)
 
 def translation_contribute_to_class(cls, main_cls, name):
     """
@@ -160,12 +161,11 @@ def translation_contribute_to_class(cls, main_cls, name):
         # Add the 'field name' properties while you're at it, too.
         for fname, field in cls.__dict__.items():
             if isinstance(field, models.fields.Field):
-                short_description = getattr(field, 'verbose_name', fname)
                 translated_fields[fname] = (field, None)
 
                 # add get_'fname' and set_'fname' methods to main_cls
                 getter = getter_generator(trans_name, fname)
-                getter.short_description = short_description
+                getter.short_description = getattr(field, 'verbose_name', fname)
                 setattr(main_cls, 'get_' + fname, getter)
 
                 setter = setter_generator(trans_name, fname)
@@ -174,14 +174,15 @@ def translation_contribute_to_class(cls, main_cls, name):
                 # add the 'fname' proxy property that allows reads
                 # from and writing to the appropriate translation
                 setattr(main_cls, fname,
-                        TranslatedFieldProxy(fname, short_description))
+                        TranslatedFieldProxy(fname, fname, field))
 
                 # create the 'fname'_'language_code' proxy properties
                 for language_id in get_language_id_list():
                     language_code = get_language_code(language_id)
-                    translated_fields[fname + '_' + language_code] = (field, language_id)
+                    alias = fname + '_' + language_code
+                    translated_fields[alias] = (field, language_id)
                     setattr(main_cls, fname + '_' + language_code,
-                            TranslatedFieldProxy(fname, short_description,
+                            TranslatedFieldProxy(fname, alias, field,
                                           language_id))
 
         # create the model with all the translatable fields
@@ -255,14 +256,29 @@ def translation_contribute_to_class(cls, main_cls, name):
     connect(translation_save_translated_fields, signal=signals.post_save,
             sender=main_cls)
 
+
+class Translation:
+    """
+    A superclass for translatablemodel.Translation inner classes.
+    """
+    contribute_to_class = classmethod(translation_contribute_to_class)
+
 def install_translation_library():
     # modify ModelBase.__new__ so that it understands how to handle the
     # 'Translation' inner class
+
+    if getattr(ModelBase, '_multilingual_installed', False):
+        # don't install it twice
+        return
 
     _old_new = ModelBase.__new__
 
     def multilingual_modelbase_new(cls, name, bases, attrs):
         if 'Translation' in attrs:
+            if not issubclass(attrs['Translation'], Translation):
+                raise ValueError, ("%s.Translation must be a subclass "
+                                   + " of multilingual.Translation.") % (name,)
+            
             # make sure the class does not specify a custom manager.
             if 'objects' in attrs:
                 raise ValueError, ("Model %s specifies both 'objects' and "
@@ -278,8 +294,10 @@ def install_translation_library():
             if 'Admin' in attrs:
                 attrs['Admin'].manager = attrs['objects']
             
-            attrs['Translation'].contribute_to_class = classmethod(translation_contribute_to_class)
         return _old_new(cls, name, bases, attrs)
 
-    setattr(ModelBase, '__new__', staticmethod(multilingual_modelbase_new))
+    ModelBase.__new__ = staticmethod(multilingual_modelbase_new)
+    ModelBase._multilingual_installed = True
 
+# install the library
+install_translation_library()
