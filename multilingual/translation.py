@@ -93,6 +93,17 @@ def fill_translation_cache(instance):
             translation = instance._meta.translation_model(**field_data)
             instance._translation_cache[language_id] = translation
 
+    # In some situations an (existing in the DB) object is loaded
+    # without using the normal QuerySet.  In such case fallback to
+    # loading the translations using a separate query.
+
+    # Unfortunately, this is indistinguishable from the situation when
+    # an object does not have any translations.  Oh well, we'll have
+    # to live with this for the time being.
+    if len(instance._translation_cache.keys()) == 0:
+        for translation in instance.get_translation_set().all():
+            instance._translation_cache[translation.language_id] = translation
+
 class TranslatedFieldProxy(object):
     def __init__(self, field_name, alias, field, language_id=None):
         self.field_name = field_name
