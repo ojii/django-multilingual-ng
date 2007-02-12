@@ -197,25 +197,19 @@ class Translation:
         # connect the post_save signal to a handler that saves translations
         connect(translation_save_translated_fields, signal=signals.post_save,
                 sender=main_cls)
-        
     contribute_to_class = classmethod(contribute_to_class)
 
-    def finish_multilingual_class(cls, *args, **kwargs):
+    def create_translation_attrs(cls, main_cls):
         """
-        Create a model with translations of a multilingual class.
+        Creates get_'field name'(language_id) and set_'field
+        name'(language_id) methods for all the translation fields.
+        Adds the 'field name' properties too.
+
+        Returns the translated_fields hash used in field lookups, see
+        multilingual.query.  It maps field names to (field,
+        language_id) tuples.
         """
-
-        main_cls = kwargs['sender']
-        translation_model_name = main_cls.__name__ + "Translation"
-
-        # The translated_fields hash is used in field lookups, see
-        # multilingual.query.  It maps field names to (field,
-        # language_id) tuples.
         translated_fields = {}
-    
-        # create get_'field name'(language_id) and set_'field
-        # name'(language_id) methods for all the translation fields.
-        # Add the 'field name' properties while you're at it, too.
     
         for fname, field in cls.__dict__.items():
             if isinstance(field, models.fields.Field):
@@ -241,7 +235,17 @@ class Translation:
                     setattr(main_cls, fname_lng,
                             TranslatedFieldProxy(fname, fname_lng, field,
                                                  language_id))
-    
+        return translated_fields
+    create_translation_attrs = classmethod(create_translation_attrs)
+
+    def finish_multilingual_class(cls, *args, **kwargs):
+        """
+        Create a model with translations of a multilingual class.
+        """
+
+        main_cls = kwargs['sender']
+        translation_model_name = main_cls.__name__ + "Translation"
+
         # create the model with all the translatable fields
         class TransMeta:
             ordering = ('language_id',)
@@ -263,7 +267,7 @@ class Translation:
                                                   get_language_code(self.language_id)))
     
         trans_model = ModelBase(translation_model_name, (models.Model,), trans_attrs)
-        trans_model._meta.translated_fields = translated_fields
+        trans_model._meta.translated_fields = cls.create_translation_attrs(main_cls)
     
         main_cls._meta.translation_model = trans_model
         main_cls.get_translation = get_translation
