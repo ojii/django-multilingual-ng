@@ -104,7 +104,7 @@ def fill_translation_cache(instance):
         for translation in instance.get_translation_qs():
             instance._translation_cache[translation.language_id] = translation
 
-class TranslatedFieldProxy(object):
+class TranslatedFieldProxy(property):
     def __init__(self, field_name, alias, field, language_id=None):
         self.field_name = field_name
         self.field = field

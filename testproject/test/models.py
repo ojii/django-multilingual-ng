@@ -179,6 +179,24 @@ Test models for the multilingual library.
 >>> [a.title for a in Article.objects.filter(Q(category__name=cat_1.name)|Q(category__name_pl__contains='2')).order_by('-title')]
 ['article 2', 'article 1']
 
+### Test the creation of new objects using keywords passed to the
+### constructor
+
+>>> set_default_language(2)
+>>> c_n = Category.objects.create(name_en='new category', name_pl='nowa kategoria')
+>>> (c_n.name, c_n.name_en, c_n.name_pl)
+('nowa kategoria', 'new category', 'nowa kategoria')
+>>> c_n.save()
+
+>>> c_n2 = Category.objects.get(name_en='new category')
+>>> (c_n2.name, c_n2.name_en, c_n2.name_pl)
+('nowa kategoria', 'new category', 'nowa kategoria')
+
+>>> set_default_language(2)
+>>> c_n3 = Category.objects.create(name='nowa kategoria 2')
+>>> (c_n3.name, c_n3.name_en, c_n3.name_pl)
+('nowa kategoria 2', '-translation-not-available-', 'nowa kategoria 2')
+
 """
 
 from django.db import models
