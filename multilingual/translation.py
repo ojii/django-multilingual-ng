@@ -58,7 +58,7 @@ def translation_save_translated_fields(instance, **kwargs):
     """
     Save all the translations of instance in post_save signal handler.
     """
-    instance.get_translation_set().all().delete()
+    instance.get_translation_qs().delete()
     for translation in getattr(instance, '_translation_cache', {}).values():
         # set the translation ID just in case the translation was
         # created while instance was not stored in the DB yet
@@ -101,7 +101,7 @@ def fill_translation_cache(instance):
     # an object does not have any translations.  Oh well, we'll have
     # to live with this for the time being.
     if len(instance._translation_cache.keys()) == 0:
-        for translation in instance.get_translation_set().all():
+        for translation in instance.get_translation_qs():
             instance._translation_cache[translation.language_id] = translation
 
 class TranslatedFieldProxy(object):
@@ -124,85 +124,130 @@ class TranslatedFieldProxy(object):
 
     short_description = property(lambda self: self.field.short_description)
 
-def translation_contribute_to_class(cls, main_cls, name):
+def getter_generator(field_name, short_description):
     """
-    Handle the inner 'Translation' class.
+    Generate get_'field name' method for field field_name.
+    """
+    def get_translation_field(self, language_id_or_code=None):
+        try:
+            return getattr(self.get_translation(language_id_or_code), field_name)
+        except TranslationDoesNotExist:
+            return "-translation-not-available-"
+    get_translation_field.short_description = short_description
+    return get_translation_field
+
+def setter_generator(field_name):
+    """
+    Generate set_'field name' method for field field_name.
+    """
+    def set_translation_field(self, value, language_id_or_code=None):
+        setattr(self.get_translation(language_id_or_code, True),
+                field_name, value)
+    set_translation_field.short_description = "set " + field_name
+    return set_translation_field
+
+def get_translation(self, language_id_or_code,
+                    create_if_necessary=False):
+    """
+    Get a translation instance for the given language_id_or_code.
+
+    If it does not exist, either create one or raise the
+    TranslationDoesNotExist exception, depending on the
+    create_if_necessary argument.
     """
 
-    def getter_generator(trans_name, field_name):
+    # fill the cache if necessary
+    self.fill_translation_cache()
+
+    language_id = get_language_id_from_id_or_code(language_id_or_code)
+    if language_id is None:
+        language_id = getattr(self, '_default_language', None)
+    if language_id is None:
+        language_id = get_default_language()
+
+    if language_id not in self._translation_cache:
+        if not create_if_necessary:
+            raise TranslationDoesNotExist
+        new_translation = self._meta.translation_model(master=self,
+                                                       language_id=language_id)
+        self._translation_cache[language_id] = new_translation
+    return self._translation_cache.get(language_id, None)
+
+def get_translation_qs(self):
+    """
+    Return the queryset with all translations of self.
+    """
+    return self._meta.translation_model.objects.filter(master=self)
+
+class Translation:
+    """
+    A superclass for translatablemodel.Translation inner classes.
+    """
+
+    def contribute_to_class(cls, main_cls, name):
         """
-        Generate get_'field name' method for model trans_name,
-        field field_name.
+        Handle the inner 'Translation' class.
         """
-        def get_translation_field(self, language_id_or_code=None):
-            try:
-                return getattr(self.get_translation(language_id_or_code), field_name)
-            except TranslationDoesNotExist:
-                return "-translation-not-available-"
-        get_translation_field.short_description = "get " + field_name
-        return get_translation_field
+
+        # delay the creation of the *Translation until the master model is
+        # fully created
+        connect(cls.finish_multilingual_class, signal=signals.class_prepared,
+                sender=main_cls, weak=False)
     
-    def setter_generator(trans_name, field_name):
-        """
-        Generate set_'field name' method for model trans_name,
-        field field_name.
-        """
-        def set_translation_field(self, value, language_id_or_code=None):
-            setattr(self.get_translation(language_id_or_code, True),
-                    field_name, value)
-        set_translation_field.short_description = "set " + field_name
-        return set_translation_field
+        # connect the post_save signal to a handler that saves translations
+        connect(translation_save_translated_fields, signal=signals.post_save,
+                sender=main_cls)
+        
+    contribute_to_class = classmethod(contribute_to_class)
 
-    def finish_multilingual_class(*args, **kwargs):
+    def finish_multilingual_class(cls, *args, **kwargs):
         """
         Create a model with translations of a multilingual class.
         """
 
-        # trans_name is the name of the model with all translatable
-        # fields.
-        trans_name = main_cls.__name__ + name
+        main_cls = kwargs['sender']
+        translation_model_name = main_cls.__name__ + "Translation"
 
         # The translated_fields hash is used in field lookups, see
         # multilingual.query.  It maps field names to (field,
         # language_id) tuples.
         translated_fields = {}
-
+    
         # create get_'field name'(language_id) and set_'field
         # name'(language_id) methods for all the translation fields.
         # Add the 'field name' properties while you're at it, too.
+    
         for fname, field in cls.__dict__.items():
             if isinstance(field, models.fields.Field):
                 translated_fields[fname] = (field, None)
-
+    
                 # add get_'fname' and set_'fname' methods to main_cls
-                getter = getter_generator(trans_name, fname)
-                getter.short_description = getattr(field, 'verbose_name', fname)
+                getter = getter_generator(fname, getattr(field, 'verbose_name', fname))
                 setattr(main_cls, 'get_' + fname, getter)
-
-                setter = setter_generator(trans_name, fname)
+    
+                setter = setter_generator(fname)
                 setattr(main_cls, 'set_' + fname, setter)
-
+    
                 # add the 'fname' proxy property that allows reads
                 # from and writing to the appropriate translation
                 setattr(main_cls, fname,
                         TranslatedFieldProxy(fname, fname, field))
-
+    
                 # create the 'fname'_'language_code' proxy properties
                 for language_id in get_language_id_list():
                     language_code = get_language_code(language_id)
-                    alias = fname + '_' + language_code
-                    translated_fields[alias] = (field, language_id)
-                    setattr(main_cls, fname + '_' + language_code,
-                            TranslatedFieldProxy(fname, alias, field,
-                                          language_id))
-
+                    fname_lng = fname + '_' + language_code
+                    translated_fields[fname_lng] = (field, language_id)
+                    setattr(main_cls, fname_lng,
+                            TranslatedFieldProxy(fname, fname_lng, field,
+                                                 language_id))
+    
         # create the model with all the translatable fields
         class TransMeta:
             ordering = ('language_id',)
-            # TO DO: for some reason, unique_together does not work
-            # for inline objects.
             unique_together = (('master', 'language_id'),)
-
+            db_table = main_cls._meta.db_table + 'translation'
+    
         trans_attrs = cls.__dict__.copy()
         trans_attrs['Meta'] = TransMeta
         trans_attrs['language_id'] = models.IntegerField(blank=False, null=False, core=True,
@@ -214,65 +259,18 @@ def translation_contribute_to_class(cls, main_cls, name):
                                                   min_num_in_admin=get_language_count(),
                                                   num_extra_on_change=0)
         trans_attrs['__str__'] = lambda self: ("%s object, language_code=%s"
-                                               % (trans_name,
+                                               % (translation_model_name,
                                                   get_language_code(self.language_id)))
-
-        trans_model = ModelBase(trans_name, (models.Model,), trans_attrs)
+    
+        trans_model = ModelBase(translation_model_name, (models.Model,), trans_attrs)
         trans_model._meta.translated_fields = translated_fields
-
-        def get_translation_set(self):
-            """
-            Return the manager for all translations of self.
-            """
-            return getattr(self, trans_name.lower() + '_set')
-
-        def get_translation(self, language_id_or_code,
-                            create_if_necessary=False):
-            """
-            Get a translation instance for the given language_id_or_code.
-
-            If it does not exist, either create one or raise the
-            TranslationDoesNotExist exception, depending on the
-            create_if_necessary argument.
-            """
-
-            # fill the cache if necessary
-            self.fill_translation_cache()
-
-            language_id = get_language_id_from_id_or_code(language_id_or_code)
-            if language_id is None:
-                language_id = getattr(self, '_default_language', None)
-            if language_id is None:
-                language_id = get_default_language()
-
-            if language_id not in self._translation_cache:
-                if not create_if_necessary:
-                    raise TranslationDoesNotExist
-                new_translation = self._meta.translation_model(master=self,
-                                                               language_id=language_id)
-                self._translation_cache[language_id] = new_translation
-            return self._translation_cache.get(language_id, None)
-
+    
         main_cls._meta.translation_model = trans_model
         main_cls.get_translation = get_translation
-        main_cls.get_translation_set = get_translation_set
+        main_cls.get_translation_qs = get_translation_qs
         main_cls.fill_translation_cache = fill_translation_cache
 
-    # delay the creation of the *Translation until the master model is
-    # fully created
-    connect(finish_multilingual_class, signal=signals.class_prepared,
-            sender=main_cls, weak=False)
-
-    # connect the post_save signal to a handler that saves translations
-    connect(translation_save_translated_fields, signal=signals.post_save,
-            sender=main_cls)
-
-
-class Translation:
-    """
-    A superclass for translatablemodel.Translation inner classes.
-    """
-    contribute_to_class = classmethod(translation_contribute_to_class)
+    finish_multilingual_class = classmethod(finish_multilingual_class)
 
 def install_translation_library():
     # modify ModelBase.__new__ so that it understands how to handle the
