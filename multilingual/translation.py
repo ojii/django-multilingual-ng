@@ -58,8 +58,10 @@ def translation_save_translated_fields(instance, **kwargs):
     """
     Save all the translations of instance in post_save signal handler.
     """
+    if not hasattr(instance, '_translation_cache'):
+        return
     instance.get_translation_qs().delete()
-    for translation in getattr(instance, '_translation_cache', {}).values():
+    for l_id, translation in instance._translation_cache.iteritems():
         # set the translation ID just in case the translation was
         # created while instance was not stored in the DB yet
         translation.master_id = instance.id
