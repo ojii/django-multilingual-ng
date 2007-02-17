@@ -254,6 +254,9 @@ class Category(models.Model):
         verbose_name_plural = 'categories'
         ordering = ('id',)
 
+class CustomArticleManager(multilingual.Manager):
+    pass
+
 class Article(models.Model):
     """
     Test model for multilingual content: a simplified article
@@ -267,6 +270,8 @@ class Article(models.Model):
                                    auto_now_add=True)
     category = models.ForeignKey(Category, verbose_name=_("Parent category"),
                                  blank=True, null=True)
+
+    objects = CustomArticleManager()
     
     # And now the translatable fields
     class Translation(multilingual.Translation):
@@ -275,3 +280,4 @@ class Article(models.Model):
         contents = models.TextField(verbose_name=_("The contents"),
                                     blank=True, null=False)
 
+        

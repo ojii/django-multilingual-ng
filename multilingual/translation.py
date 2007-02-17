@@ -10,8 +10,8 @@ from django.dispatch.dispatcher import connect
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import signals
 from languages import *
-from manager import MultilingualModelManager
 from exceptions import TranslationDoesNotExist
+import manager
 
 from django.contrib.admin.templatetags.admin_modify import StackedBoundRelatedObject
 
@@ -294,15 +294,22 @@ def install_translation_library():
                 raise ValueError, ("%s.Translation must be a subclass "
                                    + " of multilingual.Translation.") % (name,)
             
-            # make sure the class does not specify a custom manager.
-            if 'objects' in attrs:
-                raise ValueError, ("Model %s specifies both 'objects' and "
-                                   + "'Translation'.") % (name,)
+            # Make sure that if the class specifies objects then it is
+            # a subclass of our Manager.
+            #
+            # Don't check other managers since someone might want to
+            # have a non-multilingual manager, but assigning a
+            # non-multilingual manager to objects would be a common
+            # mistake.
+            if ('objects' in attrs) and (not isinstance(attrs['objects'], manager.Manager)):
+                raise ValueError, ("Model %s specifies translations, " +
+                                   "so its 'objects' manager must be " +
+                                   "a subclass of multilingual.Manager.") % (name,)
     
             # Change the default manager to one that knows how to handle
             # translation fields.  Ideally this should not be necessary, so
             # that it would still be possible to use a custom manager here.
-            attrs['objects'] = MultilingualModelManager()
+            attrs['objects'] = manager.Manager()
     
             # Override the admin manager as well, or the admin views will
             # not see the translation data.

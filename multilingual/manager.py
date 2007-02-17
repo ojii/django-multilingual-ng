@@ -2,7 +2,7 @@ from django.db import models
 from query import MultilingualModelQuerySet, QAddTranslationData
 from languages import *
 
-class MultilingualModelManager(models.Manager):
+class Manager(models.Manager):
     """
     A manager for multilingual models.
 
