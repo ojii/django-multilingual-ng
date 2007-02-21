@@ -305,11 +305,10 @@ def install_translation_library():
                 raise ValueError, ("Model %s specifies translations, " +
                                    "so its 'objects' manager must be " +
                                    "a subclass of multilingual.Manager.") % (name,)
-    
-            # Change the default manager to one that knows how to handle
-            # translation fields.  Ideally this should not be necessary, so
-            # that it would still be possible to use a custom manager here.
-            attrs['objects'] = manager.Manager()
+
+            # Change the default manager to multilingual.Manager.
+            if not 'objects' in attrs:
+                attrs['objects'] = manager.Manager()
     
             # Override the admin manager as well, or the admin views will
             # not see the translation data.
