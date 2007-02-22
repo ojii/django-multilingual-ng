@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load multilingual_tags %}
+{% block body %}
+<h1>New category</h1>
+
+<h2>Method 1: specify translatable fields directly</h2>
+<form action="." method="post">
+<p>Creator: {{ form.creator }}</p>
+<p>Parent: {{ form.parent }}</p>
+
+<p>Name EN: {% edit_translation form name en %}</p>
+<p>Description EN: {% edit_translation form description en %}</p>
+
+<p>Name PL: {% edit_translation form name pl %}</p>
+<p>Description PL: {% edit_translation form description pl %}</p>
+
+<p>{{ form.categorytranslation.0|escape }}</p>
+
+<p>{{ form|escape }}</p>
+
+<p><input type="submit" name="Save" value="Save"/>, <a href="/">Cancel</a></p>
+</form>
+
+<h2>Method 2: use the default language</h2>
+
+<p>To do.</p>
+
+{% endblock %}

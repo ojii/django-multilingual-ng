@@ -19,11 +19,6 @@ def new_lookup_inner(path, lookup_type, value, opts, table, column):
     to recognize the translation fields.
 
     Ideally this should go into lookup_inner.
-
-    TO DO: new_lookup_inner should be able to automagically add the
-    necessary joins too.  I'll skip it for the time being because
-    QAddTranslationData adds them, which is enough for all lookups
-    starting with translatable fields.
     """
 
     # check if there is anything to do for us here.  If not, send it

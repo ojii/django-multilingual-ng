@@ -11,6 +11,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import signals
 from languages import *
 from exceptions import TranslationDoesNotExist
+from fields import TranslationForeignKey
 import manager
 
 from django.contrib.admin.templatetags.admin_modify import StackedBoundRelatedObject
@@ -18,38 +19,7 @@ from django.contrib.admin.templatetags.admin_modify import StackedBoundRelatedOb
 class TransBoundRelatedObject(StackedBoundRelatedObject):
     """
     This class changes the template for translation objects.
-
-    It also reorders the translation list to match the list of
-    languages specified in settings file.
     """
-    def __init__(self, related_object, field_mapping, original):
-        super(TransBoundRelatedObject, self).__init__(related_object,
-                                                      field_mapping,
-                                                      original)
-
-        # reorder field wrappers to match the ordering of languages
-        # specified in settings
-
-        # 1. find corresponding language for each mapping
-        
-        mappings_with_lang = {}
-        mappings_without_lang = []
-        for idx, mapping in self.field_mappings.items():
-            if mapping['original']:
-                mappings_with_lang[mapping['original'].language_id] = idx
-            else:
-                mappings_without_lang.append(idx)
-
-        # 2. reorder the wrappers according to what you found in #1
-
-        new_form_field_collection_wrappers = []
-        ffcw = self.form_field_collection_wrappers
-        for language_id in get_language_id_list():
-            idx = mappings_with_lang.get(language_id, None)
-            if idx is None:
-                idx = mappings_without_lang.pop(0)
-            new_form_field_collection_wrappers.append(ffcw[idx])
-        self.form_field_collection_wrappers = new_form_field_collection_wrappers
 
     def template_name(self):
         return "admin/edit_inline_translations.html"
@@ -259,11 +229,11 @@ class Translation:
         trans_attrs['language_id'] = models.IntegerField(blank=False, null=False, core=True,
                                                          choices=get_language_choices(),
                                                          db_index=True)
-        trans_attrs['master'] = models.ForeignKey(main_cls, blank=False, null=False,
-                                                  edit_inline=TransBoundRelatedObject,
-                                                  num_in_admin=get_language_count(),
-                                                  min_num_in_admin=get_language_count(),
-                                                  num_extra_on_change=0)
+        trans_attrs['master'] = TranslationForeignKey(main_cls, blank=False, null=False,
+                                                      edit_inline=TransBoundRelatedObject,
+                                                      num_in_admin=get_language_count(),
+                                                      min_num_in_admin=get_language_count(),
+                                                      num_extra_on_change=0)
         trans_attrs['__str__'] = lambda self: ("%s object, language_code=%s"
                                                % (translation_model_name,
                                                   get_language_code(self.language_id)))

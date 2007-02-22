@@ -81,6 +81,7 @@ TEMPLATE_DIRS = (
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
     '../multilingual/templates/',
+    'templates/',
 )
 
 INSTALLED_APPS = (
@@ -90,5 +91,5 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.admin',
     'multilingual',
-    'testproject.test',
+    'testproject.articles',
 )

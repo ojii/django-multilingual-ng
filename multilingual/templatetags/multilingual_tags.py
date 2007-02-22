@@ -26,3 +26,22 @@ def language_name(language_id):
     return get_language_name(language_id)
     
 register.filter(language_name)
+
+class EditTranslationNode(template.Node):
+    def __init__(self, form_name, field_name, language=None):
+        self.form_name = form_name
+        self.field_name = field_name
+        self.language = language
+
+    def render(self, context):
+        return "-todo-"
+
+def do_edit_translation(parser, token):
+    bits = token.split_contents()
+    if len(bits) not in [3, 4]:
+        raise template.TemplateSyntaxError, \
+              "%r tag requires 3 or 4 arguments" % bits[0]
+    return EditTranslationNode(*bits[1:])
+        
+        
+register.tag('edit_translation', do_edit_translation)
