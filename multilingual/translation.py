@@ -30,7 +30,7 @@ def translation_save_translated_fields(instance, **kwargs):
     """
     if not hasattr(instance, '_translation_cache'):
         return
-    instance.get_translation_qs().delete()
+    instance.translations.all().delete()
     for l_id, translation in instance._translation_cache.iteritems():
         # set the translation ID just in case the translation was
         # created while instance was not stored in the DB yet
@@ -73,7 +73,7 @@ def fill_translation_cache(instance):
     # an object does not have any translations.  Oh well, we'll have
     # to live with this for the time being.
     if len(instance._translation_cache.keys()) == 0:
-        for translation in instance.get_translation_qs():
+        for translation in instance.translations.all():
             instance._translation_cache[translation.language_id] = translation
 
 class TranslatedFieldProxy(property):
@@ -144,12 +144,6 @@ def get_translation(self, language_id_or_code,
                                                        language_id=language_id)
         self._translation_cache[language_id] = new_translation
     return self._translation_cache.get(language_id, None)
-
-def get_translation_qs(self):
-    """
-    Return the queryset with all translations of self.
-    """
-    return self._meta.translation_model.objects.filter(master=self)
 
 class Translation:
     """
@@ -231,6 +225,7 @@ class Translation:
                                                          db_index=True)
         trans_attrs['master'] = TranslationForeignKey(main_cls, blank=False, null=False,
                                                       edit_inline=TransBoundRelatedObject,
+                                                      related_name='translations',
                                                       num_in_admin=get_language_count(),
                                                       min_num_in_admin=get_language_count(),
                                                       num_extra_on_change=0)
@@ -243,7 +238,6 @@ class Translation:
     
         main_cls._meta.translation_model = trans_model
         main_cls.get_translation = get_translation
-        main_cls.get_translation_qs = get_translation_qs
         main_cls.fill_translation_cache = fill_translation_cache
 
     finish_multilingual_class = classmethod(finish_multilingual_class)
