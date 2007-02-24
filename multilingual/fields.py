@@ -18,21 +18,15 @@ def get_list(self, parent_instance=None):
     # 1. find corresponding language for each entry
     
     entries_with_lang = {}
-    entries_without_lang = []
     for entry in the_list:
-        if entry is None:
-            entries_without_lang.append(entry)
-        else:
+        if entry is not None:
             entries_with_lang[entry.language_id] = entry
 
     # 2. reorder the entries according to what you found in #1
 
     new_list = []
     for language_id in get_language_id_list():
-        entry = entries_with_lang.get(language_id, None)
-        if entry is None:
-            entry = entries_without_lang.pop(0)
-        new_list.append(entry)
+        new_list.append(entries_with_lang.get(language_id, None))
     return new_list
 
 _old_get_list = RelatedObject.get_list
