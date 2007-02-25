@@ -6,7 +6,7 @@ import django.db.models.manipulators as django_manipulators
 from languages import get_language_id_list
 
 class MultilingualManipulatorMixin:
-    def multilingual_pre_save(self, new_data):
+    def fix_translation_data(self, new_data):
         """
         Update data before save to include necessary fields for
         translations.
@@ -30,15 +30,17 @@ class MultilingualManipulatorMixin:
 
 class MultilingualAddManipulator(django_manipulators.AutomaticAddManipulator,
                                  MultilingualManipulatorMixin):
-    def save(self, new_data):
-        self.multilingual_pre_save(new_data)
-        return super(MultilingualAddManipulator, self).save(new_data)
+
+    def do_html2python(self, new_data):
+        self.fix_translation_data(new_data)
+        super(MultilingualAddManipulator, self).do_html2python(new_data)
 
 class MultilingualChangeManipulator(django_manipulators.AutomaticChangeManipulator,
                                     MultilingualManipulatorMixin):
-    def save(self, new_data):
-        self.multilingual_pre_save(new_data)
-        return super(MultilingualChangeManipulator, self).save(new_data)
+
+    def do_html2python(self, new_data):
+        self.fix_translation_data(new_data)
+        super(MultilingualChangeManipulator, self).do_html2python(new_data)
 
 def add_multilingual_manipulators(sender):
     """
