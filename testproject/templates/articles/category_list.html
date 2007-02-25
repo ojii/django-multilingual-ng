@@ -1,14 +1,19 @@
 {% extends "base.html" %}
 {% block body %}
 <h1>Categories</h1>
+<table style="border: 1px solid black; width: 50%; margin: auto">
 {% if object_list %}
-<ul>
+<tr><th>en</th><th>pl</th><th>&nbsp;</th></tr>
  {% for object in object_list %}
- <li>{{ object|escape }}</li>
+ <tr>
+ <td>{{ object.name_en|escape }}</td>
+ <td>{{ object.name_pl|escape }}</td>
+ <td><a href="/{{ object.id }}/">edit</a></td>
+ </tr>
  {% endfor %}
-</ul>
 {% else %}
- <p>No categories yet.</p>
+ <tr><td>No categories yet.</td></tr>
 {% endif %}
-<p><a href="/new/">Add a category</a></p>
+<tr><td><a href="/new/">Add a category</a></td></tr>
+</table>
 {% endblock %}

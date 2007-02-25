@@ -6,6 +6,8 @@ Django-multilingual: language-related settings and functions.
 from django.conf import settings
 LANGUAGES = settings.LANGUAGES
 
+from exceptions import LanguageDoesNotExist
+
 try:
     from threading import local
 except ImportError:
@@ -42,6 +44,11 @@ def get_language_id_from_id_or_code(language_id_or_code):
         if code == language_id_or_code:
             return i
     raise LanguageDoesNotExist()
+
+def get_language_idx(language_id_or_code):
+    # to do: optimize
+    language_id = get_language_id_from_id_or_code(language_id_or_code)
+    return get_language_id_list().index(language_id)
 
 def set_default_language(language_id_or_code):
     """

@@ -236,6 +236,9 @@ class Category(models.Model):
         description = models.TextField(verbose_name=_("The description"),
                                        blank=True, null=False)
 
+    def get_absolute_url(self):
+        return "/" + str(self.id) + "/"
+
     def __str__(self):
         # note that you can use name and description fields as usual
         try:

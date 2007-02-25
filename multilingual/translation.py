@@ -12,6 +12,7 @@ from django.db.models import signals
 from languages import *
 from exceptions import TranslationDoesNotExist
 from fields import TranslationForeignKey
+from manipulators import add_multilingual_manipulators
 import manager
 
 from django.contrib.admin.templatetags.admin_modify import StackedBoundRelatedObject
@@ -278,6 +279,10 @@ def install_translation_library():
             # not see the translation data.
             if 'Admin' in attrs:
                 attrs['Admin'].manager = attrs['objects']
+
+            # Install a hack to let add_multilingual_manipulators know
+            # this is a translatable model
+            attrs['is_translation_model'] = lambda self: True
             
         return _old_new(cls, name, bases, attrs)
 
