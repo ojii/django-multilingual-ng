@@ -7,17 +7,42 @@
  <h1>New category</h1>
 {% endif %}
 
-<form action="." method="post">
-<p>Creator: {{ form.creator }}</p>
-<p>Parent: {{ form.parent }}</p>
+<p>This page lets you {{ object|yesno:"edit,create" }} categories
+with forms created two ways.</p>
 
-<p>Name EN: {% edit_translation form name "en" %}</p>
-<p>Description EN: {% edit_translation form description "en" %}</p>
+<table>
+<tr>
+ <th>1. form with all translations</th>
+ <th>2. form with default translation ({{ DEFAULT_LANGUAGE_CODE }})</th>
+</tr>
+<tr>
+<td>
 
-<p>Name PL: {% edit_translation form name "pl" %}</p>
-<p>Description PL: {% edit_translation form description "pl" %}</p>
+ <form action="." method="post">
+ <p>Creator: {{ form.creator }}</p>
+ <p>Parent: {{ form.parent }}</p>
 
-<p><input type="submit" name="Save" value="Save"/>, <a href="/">Cancel</a></p>
-</form>
+ <p>Name EN: {% edit_translation form name "en" %}</p>
+ <p>Description EN: {% edit_translation form description "en" %}</p>
 
+ <p>Name PL: {% edit_translation form name "pl" %}</p>
+ <p>Description PL: {% edit_translation form description "pl" %}</p>
+
+ <p><input type="submit" name="Save" value="Save"/>, <a href="/">Cancel</a></p>
+ </form>
+
+</td><td>
+
+ <form action="." method="post">
+ <p>Creator: {{ form.creator }}</p>
+ <p>Parent: {{ form.parent }}</p>
+
+ <p>Name: {% edit_translation form name %}</p>
+ <p>Description: {% edit_translation form description %}</p>
+
+ <p><input type="submit" name="Save" value="Save"/>, <a href="/">Cancel</a></p>
+ </form>
+
+</td></tr>
+</table>
 {% endblock %}
