@@ -13,13 +13,6 @@ class MultilingualManipulatorMixin:
 
         This means adding language_id field for every translation.
         """
-
-        # TO do: add proper .id fields in the latter loop instead of
-        # deleting translations
-        original = getattr(self, 'original_object', None)
-        if original:
-            original.translations.all().delete()
-
         trans_model = self.model._meta.translation_model
         lower_model_name = trans_model._meta.object_name.lower()
         language_id_list = get_language_id_list()
@@ -41,6 +34,14 @@ class MultilingualChangeManipulator(django_manipulators.AutomaticChangeManipulat
     def do_html2python(self, new_data):
         self.fix_translation_data(new_data)
         super(MultilingualChangeManipulator, self).do_html2python(new_data)
+
+
+    def save(self, new_data):
+        # delete all translations of original_object.  This is
+        # necessary because ChangeManipulator saves the related
+        # objects by itself.
+        self.original_object.translations.all().delete()
+        return super(MultilingualChangeManipulator, self).save(new_data)
 
 def add_multilingual_manipulators(sender):
     """
