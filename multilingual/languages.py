@@ -37,9 +37,12 @@ def get_language_choices():
     return [(language_id, get_language_code(language_id))
             for language_id in get_language_id_list()]
 
-def get_language_id_from_id_or_code(language_id_or_code):
+def get_language_id_from_id_or_code(language_id_or_code, use_default=True):
     if language_id_or_code is None:
-        return None
+        if use_default:
+            return get_default_language()
+        else:
+            return None
     
     if isinstance(language_id_or_code, int):
         return language_id_or_code

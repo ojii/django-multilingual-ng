@@ -31,12 +31,25 @@ def translation_save_translated_fields(instance, **kwargs):
     """
     if not hasattr(instance, '_translation_cache'):
         return
-    instance.translations.all().delete()
     for l_id, translation in instance._translation_cache.iteritems():
         # set the translation ID just in case the translation was
         # created while instance was not stored in the DB yet
         translation.master_id = instance.id
         translation.save()
+
+def translation_overwrite_previous(instance, **kwargs):
+    """
+    Delete previously existing translation with the same master and
+    language_id values.  To be called by translation model's pre_save
+    signal.
+
+    This most probably means I am abusing something here trying to use
+    Django inline editor.  Oh well, it will have to go anyway when we
+    move to newforms.
+    """
+    qs = instance.__class__.objects
+    qs = qs.filter(master=instance.master).filter(language_id=instance.language_id)
+    qs.delete()
 
 def fill_translation_cache(instance):
     """
@@ -132,7 +145,7 @@ def get_translation(self, language_id_or_code,
     # fill the cache if necessary
     self.fill_translation_cache()
 
-    language_id = get_language_id_from_id_or_code(language_id_or_code)
+    language_id = get_language_id_from_id_or_code(language_id_or_code, False)
     if language_id is None:
         language_id = getattr(self, '_default_language', None)
     if language_id is None:
@@ -161,9 +174,11 @@ class Translation:
         connect(cls.finish_multilingual_class, signal=signals.class_prepared,
                 sender=main_cls, weak=False)
     
-        # connect the post_save signal to a handler that saves translations
+        # connect the post_save signal on master class to a handler
+        # that saves translations
         connect(translation_save_translated_fields, signal=signals.post_save,
                 sender=main_cls)
+
     contribute_to_class = classmethod(contribute_to_class)
 
     def create_translation_attrs(cls, main_cls):
@@ -240,6 +255,14 @@ class Translation:
         main_cls._meta.translation_model = trans_model
         main_cls.get_translation = get_translation
         main_cls.fill_translation_cache = fill_translation_cache
+
+        connect(fill_translation_cache, signal=signals.post_init,
+                sender=main_cls)
+
+        # connect the pre_save signal on translation class to a
+        # function removing previous translation entries.
+        connect(translation_overwrite_previous, signal=signals.pre_save,
+                sender=trans_model, weak=False)
 
     finish_multilingual_class = classmethod(finish_multilingual_class)
 

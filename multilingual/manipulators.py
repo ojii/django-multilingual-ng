@@ -35,14 +35,6 @@ class MultilingualChangeManipulator(django_manipulators.AutomaticChangeManipulat
         self.fix_translation_data(new_data)
         super(MultilingualChangeManipulator, self).do_html2python(new_data)
 
-
-    def save(self, new_data):
-        # delete all translations of original_object.  This is
-        # necessary because ChangeManipulator saves the related
-        # objects by itself.
-        self.original_object.translations.all().delete()
-        return super(MultilingualChangeManipulator, self).save(new_data)
-
 def add_multilingual_manipulators(sender):
     """
     A replacement for django.db.models.manipulators that installs
