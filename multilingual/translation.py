@@ -256,8 +256,11 @@ class Translation:
         main_cls.get_translation = get_translation
         main_cls.fill_translation_cache = fill_translation_cache
 
-        connect(fill_translation_cache, signal=signals.post_init,
-                sender=main_cls)
+        # Note: don't fill the translation cache in post_init, as all
+        # the extra values selected by QAddTranslationData will be
+        # assigned AFTER init()
+#        connect(fill_translation_cache, signal=signals.post_init,
+#                sender=main_cls)
 
         # connect the pre_save signal on translation class to a
         # function removing previous translation entries.
