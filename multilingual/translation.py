@@ -118,7 +118,7 @@ def getter_generator(field_name, short_description):
         try:
             return getattr(self.get_translation(language_id_or_code), field_name)
         except TranslationDoesNotExist:
-            return "-translation-not-available-"
+            return None
     get_translation_field.short_description = short_description
     return get_translation_field
 

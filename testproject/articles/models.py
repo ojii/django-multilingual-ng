@@ -195,7 +195,7 @@ Test models for the multilingual library.
 >>> set_default_language(2)
 >>> c_n3 = Category.objects.create(name='nowa kategoria 2')
 >>> (c_n3.name, c_n3.name_en, c_n3.name_pl)
-('nowa kategoria 2', '-translation-not-available-', 'nowa kategoria 2')
+('nowa kategoria 2', None, 'nowa kategoria 2')
 
 """
 
