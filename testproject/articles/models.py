@@ -63,13 +63,6 @@ Test models for the multilingual library.
 >>> (c.name, c.get_name('en'), c.get_name('pl'))
 ('category 2', 'category 2', 'kategoria 2')
 
-# test for issue #15
-# http://code.google.com/p/django-multilingual/issues/detail?id=15
-
->>> c = Category.objects.select_related(depth=1).get(id=c.id)
->>> (c.name, c.name_en, c.name_pl)
-('category 2', 'category 2', 'kategoria 2')
-
 ### Check ordering
 
 >>> set_default_language(1)
@@ -290,4 +283,3 @@ class Article(models.Model):
         contents = models.TextField(verbose_name=_("The contents"),
                                     blank=True, null=False)
 
-        

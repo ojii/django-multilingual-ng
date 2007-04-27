@@ -92,6 +92,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'multilingual',
     'testproject.articles',
+    'testproject.issues',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
