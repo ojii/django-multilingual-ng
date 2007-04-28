@@ -233,6 +233,7 @@ class Translation:
             ordering = ('language_id',)
             unique_together = (('master', 'language_id'),)
             db_table = main_cls._meta.db_table + 'translation'
+            app_label = main_cls._meta.app_label
     
         trans_attrs = cls.__dict__.copy()
         trans_attrs['Meta'] = TransMeta

@@ -93,6 +93,7 @@ INSTALLED_APPS = (
     'multilingual',
     'testproject.articles',
     'testproject.issue_15',
+    'testproject.issue_16',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
