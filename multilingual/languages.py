@@ -82,17 +82,31 @@ def get_default_language_code():
     language_id = get_language_id_from_id_or_code(get_default_language())
     return get_language_code(language_id)
 
+def _to_db_identifier(name):
+    """
+    Convert name to something that is usable as a field name or table
+    alias in SQL.
+
+    For the time being assume that the only possible problem with name
+    is the presence of dashes.    
+    """
+    return name.replace('-', '_')
+
 def get_translation_table_alias(translation_table_name, language_id):
     """
     Return an alias for the translation table for a given language_id.
     Used in SQL queries.
     """
-    return translation_table_name + '_' + get_language_code(language_id)
+    return (translation_table_name
+            + '_'
+            + _to_db_identifier(get_language_code(language_id)))
 
 def get_translated_field_alias(field_name, language_id=None):
     """
     Return an alias for field_name field for a given language_id.
     Used in SQL queries.
     """
-    return '_trans_' + field_name + '_' + get_language_code(language_id)
+    return ('_trans_'
+            + field_name
+            + '_' + _to_db_identifier(get_language_code(language_id)))
 

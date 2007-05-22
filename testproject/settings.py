@@ -32,7 +32,9 @@ LANGUAGE_CODE = 'en-us'
 
 
 LANGUAGES = [['en', 'English'], # id=1
-             ['pl', 'Polish']]  # id=2
+             ['pl', 'Polish'],  # id=2
+             ['zh-cn', 'Simplified Chinese'], # id=3
+             ]
 
 DEFAULT_LANGUAGE = 1
 

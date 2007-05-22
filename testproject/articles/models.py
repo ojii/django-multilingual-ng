@@ -4,7 +4,7 @@ Test models for the multilingual library.
 # make sure the settings are right
 >>> from multilingual.languages import LANGUAGES
 >>> LANGUAGES
-[['en', 'English'], ['pl', 'Polish']]
+[['en', 'English'], ['pl', 'Polish'], ['zh-cn', 'Simplified Chinese']]
 
 >>> from multilingual import set_default_language
 >>> from django.db.models import Q
