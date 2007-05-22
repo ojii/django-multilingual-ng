@@ -67,7 +67,8 @@ def fill_translation_cache(instance):
     instance._translation_cache = {}
     for language_id in get_language_id_list():
         # see if translation for language_id was in the query
-        if hasattr(instance, get_translated_field_alias('id', language_id)):
+        field_alias = get_translated_field_alias('id', language_id)
+        if getattr(instance, field_alias, None) is not None:
             field_names = [f.attname for f in instance._meta.translation_model._meta.fields]
 
             # if so, create a translation object and put it in the cache
