@@ -6,7 +6,8 @@ Also, a wrapper for lookup_inner that makes it possible to lookup via
 translatable fields.
 """
 
-from django.db import models, backend
+import django
+from django.db import models, backend, connection
 from django.db.models.query import QuerySet, get_where_clause
 from django.utils.datastructures import SortedDict
 from languages import *
@@ -28,6 +29,7 @@ def new_lookup_inner(path, lookup_type, value, opts, table, column):
         return old_lookup_inner(path, lookup_type, value, opts, table, column)
 
     translation_opts = opts.translation_model._meta
+
     if path[0] not in translation_opts.translated_fields:
         return old_lookup_inner(path, lookup_type, value, opts, table, column)
 
@@ -46,7 +48,10 @@ def new_lookup_inner(path, lookup_type, value, opts, table, column):
     new_table = (current_table + "__" + translation_table)
 
     # add the join necessary for the current step
-    qn = backend.quote_name
+    try:
+        qn = backend.quote_name
+    except AttributeError:
+        qn = connection.ops.quote_name
     condition = ('((%s.master_id = %s.id) AND (%s.language_id = %s))'
                  % (new_table, current_table, new_table, language_id))
     joins[qn(new_table)] = (qn(translation_opts.db_table), 'LEFT JOIN', condition)
@@ -63,7 +68,23 @@ def new_lookup_inner(path, lookup_type, value, opts, table, column):
         params.extend(params2)
     else:
         trans_table_name = opts.translation_model._meta.db_table
-        where.append(get_where_clause(lookup_type, new_table + '.', field.attname, value))
+        if (django.VERSION[0] >= 1) or (django.VERSION[1] >= 97):
+            # BACKWARDS_COMPATIBILITY_HACK
+            # The get_where_clause function got another parameter as of Django rev
+            # #5943, see here: http://code.djangoproject.com/changeset/5943
+
+            # This change happened when 0.97.pre was the current trunk
+            # and there is no sure way to detect whether your version
+            # requires the new parameter or not, so I will not try to
+            # guess.  If you use 0.97.* make sure you have a pretty
+            # recent version or this line will fail.
+            where.append(get_where_clause(lookup_type, new_table + '.',
+                                          field.attname, value,
+                                          field.db_type()))
+        else:
+            # compatibility code for 0.96
+            where.append(get_where_clause(lookup_type, new_table + '.',
+                                          field.attname, value))
         params.extend(field.get_db_prep_lookup(lookup_type, value))
 
     return joins, where, params

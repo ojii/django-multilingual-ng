@@ -2,6 +2,12 @@ from django.db import models
 from category import Category
 import multilingual
 
+try:
+    from django.utils.translation import ugettext as _
+except:
+    # if this fails then _ is a builtin
+    pass
+
 class Page(models.Model):
     category = models.ForeignKey(Category, verbose_name=_("Parent category"),
                                  blank=True, null=True)

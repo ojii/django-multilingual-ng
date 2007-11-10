@@ -1,6 +1,10 @@
 """
 Test models for the multilingual library.
 
+# Note: the to_str() calls in all the tests are here only to make it
+# easier to test both pre-unicode and current Django.
+>>> from testproject.utils import to_str
+
 # make sure the settings are right
 >>> from multilingual.languages import LANGUAGES
 >>> LANGUAGES
@@ -27,10 +31,10 @@ Test models for the multilingual library.
 ### See if the test data was saved correctly
 
 >>> c = Category.objects.all().order_by('id')[0]
->>> (c.name, c.get_name(1), c.get_name(2))
+>>> to_str((c.name, c.get_name(1), c.get_name(2)))
 ('category 1', 'category 1', 'kategoria 1')
 >>> c = Category.objects.all().order_by('id')[1]
->>> (c.name, c.get_name(1), c.get_name(2))
+>>> to_str((c.name, c.get_name(1), c.get_name(2)))
 ('category 2', 'category 2', 'kategoria 2')
 
 ### Check translation changes.
@@ -41,32 +45,32 @@ Test models for the multilingual library.
 
 # set language: pl
 >>> set_default_language(2)
->>> (c.name, c.get_name(1), c.get_name(2))
+>>> to_str((c.name, c.get_name(1), c.get_name(2)))
 ('kategoria 1', 'category 1', 'kategoria 1')
 >>> c.name = 'kat 1'
->>> (c.name, c.get_name(1), c.get_name(2))
+>>> to_str((c.name, c.get_name(1), c.get_name(2)))
 ('kat 1', 'category 1', 'kat 1')
 
 # set language: en
 >>> set_default_language('en')
 >>> c.name = 'cat 1'
->>> (c.name, c.get_name(1), c.get_name(2))
+>>> to_str((c.name, c.get_name(1), c.get_name(2)))
 ('cat 1', 'cat 1', 'kat 1')
 >>> c.save()
 
 # Read the entire Category objects from the DB again to see if
 # everything was saved correctly.
 >>> c = Category.objects.all().order_by('id')[0]
->>> (c.name, c.get_name('en'), c.get_name('pl'))
+>>> to_str((c.name, c.get_name('en'), c.get_name('pl')))
 ('cat 1', 'cat 1', 'kat 1')
 >>> c = Category.objects.all().order_by('id')[1]
->>> (c.name, c.get_name('en'), c.get_name('pl'))
+>>> to_str((c.name, c.get_name('en'), c.get_name('pl')))
 ('category 2', 'category 2', 'kategoria 2')
 
 ### Check ordering
 
 >>> set_default_language(1)
->>> [c.name for c in  Category.objects.all().order_by('name_en')]
+>>> to_str([c.name for c in  Category.objects.all().order_by('name_en')])
 ['cat 1', 'category 2']
 
 ### Check ordering
@@ -79,17 +83,17 @@ Test models for the multilingual library.
 >>> c.name = 'zzz cat 1'
 >>> c.save()
 
->>> [c.name for c in  Category.objects.all().order_by('name_en')]
+>>> to_str([c.name for c in  Category.objects.all().order_by('name_en')])
 ['category 2', 'zzz cat 1']
->>> [c.name for c in  Category.objects.all().order_by('name')]
+>>> to_str([c.name for c in  Category.objects.all().order_by('name')])
 ['category 2', 'zzz cat 1']
->>> [c.name for c in  Category.objects.all().order_by('-name')]
+>>> to_str([c.name for c in  Category.objects.all().order_by('-name')])
 ['zzz cat 1', 'category 2']
 
 >>> set_default_language(2)
->>> [c.name for c in  Category.objects.all().order_by('name')]
+>>> to_str([c.name for c in  Category.objects.all().order_by('name')])
 ['kat 1', 'kategoria 2']
->>> [c.name for c in  Category.objects.all().order_by('-name')]
+>>> to_str([c.name for c in  Category.objects.all().order_by('-name')])
 ['kategoria 2', 'kat 1']
 
 ### Check filtering
@@ -100,55 +104,55 @@ Test models for the multilingual library.
 # QuerySet._filter_or_exclude
 
 >>> set_default_language('en')
->>> [c.name for c in  Category.objects.all().filter(name__contains='2')]
+>>> to_str([c.name for c in  Category.objects.all().filter(name__contains='2')])
 ['category 2']
 
 >>> set_default_language('en')
->>> [c.name for c in  Category.objects.all().filter(Q(name__contains='2'))]
+>>> to_str([c.name for c in  Category.objects.all().filter(Q(name__contains='2'))])
 ['category 2']
 
 >>> set_default_language(1)
->>> [c.name for c in
-...  Category.objects.all().filter(Q(name__contains='2')|Q(name_pl__contains='kat'))]
+>>> to_str([c.name for c in
+...  Category.objects.all().filter(Q(name__contains='2')|Q(name_pl__contains='kat'))])
 ['zzz cat 1', 'category 2']
 
 >>> set_default_language(1)
->>> [c.name for c in  Category.objects.all().filter(name_en__contains='2')]
+>>> to_str([c.name for c in  Category.objects.all().filter(name_en__contains='2')])
 ['category 2']
 
 >>> set_default_language(1)
->>> [c.name for c in  Category.objects.all().filter(Q(name_pl__contains='kat'))]
+>>> to_str([c.name for c in  Category.objects.all().filter(Q(name_pl__contains='kat'))])
 ['zzz cat 1', 'category 2']
 
 >>> set_default_language('pl')
->>> [c.name for c in  Category.objects.all().filter(name__contains='k')]
+>>> to_str([c.name for c in  Category.objects.all().filter(name__contains='k')])
 ['kat 1', 'kategoria 2']
 
 >>> set_default_language('pl')
->>> [c.name for c in  Category.objects.all().filter(Q(name__contains='kategoria'))]
+>>> to_str([c.name for c in  Category.objects.all().filter(Q(name__contains='kategoria'))])
 ['kategoria 2']
 
 ### Check specifying query set language
 >>> c_en = Category.objects.all().for_language('en') 
 >>> c_pl = Category.objects.all().for_language(2)  # both ID and code work here
->>> c_en.get(name__contains='1').name
+>>> to_str(c_en.get(name__contains='1').name)
 'zzz cat 1'
->>> c_pl.get(name__contains='1').name
+>>> to_str(c_pl.get(name__contains='1').name)
 'kat 1'
 
->>> [c.name for c in  c_en.order_by('name')]
+>>> to_str([c.name for c in  c_en.order_by('name')])
 ['category 2', 'zzz cat 1']
->>> [c.name for c in c_pl.order_by('-name')]
+>>> to_str([c.name for c in c_pl.order_by('-name')])
 ['kategoria 2', 'kat 1']
 
 >>> c = c_en.get(id=1)
 >>> c.name = 'test'
->>> (c.name, c.name_en, c.name_pl)
+>>> to_str((c.name, c.name_en, c.name_pl))
 ('test', 'test', 'kat 1')
 
 >>> c = c_pl.get(id=1)
 >>> c.name = 'test'
->>> (c.name, c.name_en, c.name_pl)
+>>> to_str((c.name, c.name_en, c.name_pl))
 ('test', 'zzz cat 1', 'test')
 
 ### Check filtering spanning more than one model
@@ -172,11 +176,11 @@ Test models for the multilingual library.
 >>> a.set_contents('zawartosc 2', 1)
 >>> a.save()
 
->>> [a.title for a in Article.objects.filter(category=cat_1)]
+>>> to_str([a.title for a in Article.objects.filter(category=cat_1)])
 ['article 1']
->>> [a.title for a in Article.objects.filter(category__name=cat_1.name)]
+>>> to_str([a.title for a in Article.objects.filter(category__name=cat_1.name)])
 ['article 1']
->>> [a.title for a in Article.objects.filter(Q(category__name=cat_1.name)|Q(category__name_pl__contains='2')).order_by('-title')]
+>>> to_str([a.title for a in Article.objects.filter(Q(category__name=cat_1.name)|Q(category__name_pl__contains='2')).order_by('-title')])
 ['article 2', 'article 1']
 
 ### Test the creation of new objects using keywords passed to the
@@ -184,17 +188,17 @@ Test models for the multilingual library.
 
 >>> set_default_language(2)
 >>> c_n = Category.objects.create(name_en='new category', name_pl='nowa kategoria')
->>> (c_n.name, c_n.name_en, c_n.name_pl)
+>>> to_str((c_n.name, c_n.name_en, c_n.name_pl))
 ('nowa kategoria', 'new category', 'nowa kategoria')
 >>> c_n.save()
 
 >>> c_n2 = Category.objects.get(name_en='new category')
->>> (c_n2.name, c_n2.name_en, c_n2.name_pl)
+>>> to_str((c_n2.name, c_n2.name_en, c_n2.name_pl))
 ('nowa kategoria', 'new category', 'nowa kategoria')
 
 >>> set_default_language(2)
 >>> c_n3 = Category.objects.create(name='nowa kategoria 2')
->>> (c_n3.name, c_n3.name_en, c_n3.name_pl)
+>>> to_str((c_n3.name, c_n3.name_en, c_n3.name_pl))
 ('nowa kategoria 2', None, 'nowa kategoria 2')
 
 """
@@ -202,6 +206,12 @@ Test models for the multilingual library.
 from django.db import models
 from django.contrib.auth.models import User
 import multilingual
+
+try:
+    from django.utils.translation import ugettext as _
+except:
+    # if this fails then _ is a builtin
+    pass
 
 class Category(models.Model):
     """
@@ -239,12 +249,16 @@ class Category(models.Model):
     def get_absolute_url(self):
         return "/" + str(self.id) + "/"
 
-    def __str__(self):
+    def __unicode__(self):
         # note that you can use name and description fields as usual
         try:
             return str(self.name)
         except multilingual.TranslationDoesNotExist:
             return "-not-available-"
+
+    def __str__(self):
+        # compatibility
+        return str(self.__unicode__())
     
     class Admin:
         # Again, field names would just work here, but if you need
