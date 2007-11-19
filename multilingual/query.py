@@ -30,6 +30,11 @@ def new_lookup_inner(path, lookup_type, value, opts, table, column):
 
     translation_opts = opts.translation_model._meta
 
+    # This hack adapts this mess
+    #  to Django's "order_by for related tables" patch
+    if path[0] is not None and path[0].startswith("_trans_") and path[0][7:] in translation_opts.translated_fields:
+        path[0] = path[0][7:]
+
     if path[0] not in translation_opts.translated_fields:
         return old_lookup_inner(path, lookup_type, value, opts, table, column)
 
