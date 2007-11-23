@@ -1,4 +1,4 @@
-from languages import get_language_code_list, get_default_language_code
+from multilingual.languages import get_language_code_list, get_default_language_code
 
 def multilingual(request):
     """

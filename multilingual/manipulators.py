@@ -3,7 +3,7 @@ Automatic add and change manipulators for translatable models.
 """
 
 import django.db.models.manipulators as django_manipulators
-from languages import get_language_id_list
+from multilingual.languages import get_language_id_list
 
 class MultilingualManipulatorMixin:
     def fix_translation_data(self, new_data):

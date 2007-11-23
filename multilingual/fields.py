@@ -1,6 +1,6 @@
 from django.db import models
 from django.db.models.related import RelatedObject
-from languages import get_language_id_list
+from multilingual.languages import get_language_id_list,get_language_count
 
 def get_list(self, parent_instance=None):
     """

@@ -1,5 +1,5 @@
 from django.db import models
-from category import Category
+from issue_16.models.category import Category
 import multilingual
 
 try:

@@ -9,11 +9,11 @@ from django.db.models.base import ModelBase
 from django.dispatch.dispatcher import connect
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import signals
-from languages import *
-from exceptions import TranslationDoesNotExist
-from fields import TranslationForeignKey
-from manipulators import add_multilingual_manipulators
-import manager
+from multilingual.languages import *
+from multilingual.exceptions import TranslationDoesNotExist
+from multilingual.fields import TranslationForeignKey
+from multilingual.manipulators import add_multilingual_manipulators
+from multilingual import manager
 
 from django.contrib.admin.templatetags.admin_modify import StackedBoundRelatedObject
 

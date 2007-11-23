@@ -16,5 +16,5 @@ http://code.google.com/p/django-multilingual/issues/detail?id=16
 
 """
 
-from category import Category
-from page import Page
+from issue_16.models.category import Category
+from issue_16.models.page import Page

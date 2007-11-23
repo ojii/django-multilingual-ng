@@ -9,7 +9,7 @@ Django-multilingual: language-related settings and functions.
 from django.conf import settings
 LANGUAGES = settings.LANGUAGES
 
-from exceptions import LanguageDoesNotExist
+from multilingual.exceptions import LanguageDoesNotExist
 
 try:
     from threading import local

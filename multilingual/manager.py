@@ -1,6 +1,6 @@
 from django.db import models
-from query import MultilingualModelQuerySet, QAddTranslationData
-from languages import *
+from multilingual.query import MultilingualModelQuerySet, QAddTranslationData
+from multilingual.languages import *
 
 class Manager(models.Manager):
     """

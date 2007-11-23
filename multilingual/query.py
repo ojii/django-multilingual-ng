@@ -10,7 +10,7 @@ import django
 from django.db import models, backend, connection
 from django.db.models.query import QuerySet, get_where_clause
 from django.utils.datastructures import SortedDict
-from languages import *
+from multilingual.languages import *
 
 old_lookup_inner = models.query.lookup_inner
 
