@@ -221,6 +221,21 @@ class Translation:
         return translated_fields
     create_translation_attrs = classmethod(create_translation_attrs)
 
+    def get_unique_fields(cls):
+        """
+        Return a list of fields with "unique" attribute, which needs to
+        be augmented by the language.
+        """
+        unique_fields = []
+    
+        for fname, field in cls.__dict__.items():
+            if isinstance(field, models.fields.Field):
+                if getattr(field,'unique',False):
+                    field.unique = False
+                    unique_fields.append(fname)
+        return unique_fields
+    get_unique_fields = classmethod(get_unique_fields)
+
     def finish_multilingual_class(cls, *args, **kwargs):
         """
         Create a model with translations of a multilingual class.
@@ -230,9 +245,13 @@ class Translation:
         translation_model_name = main_cls.__name__ + "Translation"
 
         # create the model with all the translatable fields
+        unique = [('language_id', 'master')]
+        for f in cls.get_unique_fields():
+            unique.append(('language_id',f))
+
         class TransMeta:
             ordering = ('language_id',)
-            unique_together = (('master', 'language_id'),)
+            unique_together = tuple(unique)
             db_table = main_cls._meta.db_table + 'translation'
             app_label = main_cls._meta.app_label
     

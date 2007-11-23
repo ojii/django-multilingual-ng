@@ -3,6 +3,8 @@ Automatic add and change manipulators for translatable models.
 """
 
 import django.db.models.manipulators as django_manipulators
+
+from django.utils.functional import curry
 from multilingual.languages import get_language_id_list
 
 class MultilingualManipulatorMixin:
@@ -24,12 +26,37 @@ class MultilingualManipulatorMixin:
 class MultilingualAddManipulator(django_manipulators.AutomaticAddManipulator,
                                  MultilingualManipulatorMixin):
 
+    def _prepare(cls,model):
+        super(MultilingualAddManipulator,cls)._prepare(model)
+
+        # TODO: This code should test for translation-specific
+        # uniqueness constraints.
+        # Currently this is left to the database.
+        # TODO: Add isUnique attributes for any by-date uniqueness
+        # constraints.
+
+        def ignore(*a): pass
+        for field_name_list in model._meta.translation_model._meta.unique_together:
+            setattr(cls, 'isUnique%s' % '_'.join(field_name_list),
+                ignore)
+    _prepare = classmethod(_prepare)
+
     def do_html2python(self, new_data):
         self.fix_translation_data(new_data)
         super(MultilingualAddManipulator, self).do_html2python(new_data)
 
 class MultilingualChangeManipulator(django_manipulators.AutomaticChangeManipulator,
                                     MultilingualManipulatorMixin):
+
+    def _prepare(cls,model):
+        super(MultilingualChangeManipulator,cls)._prepare(model)
+
+        # As above.
+        def ignore(*a): pass
+        for field_name_list in model._meta.translation_model._meta.unique_together:
+            setattr(cls, 'isUnique%s' % '_'.join(field_name_list),
+                ignore)
+    _prepare = classmethod(_prepare)
 
     def do_html2python(self, new_data):
         self.fix_translation_data(new_data)

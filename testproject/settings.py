@@ -96,6 +96,7 @@ INSTALLED_APPS = (
     'testproject.articles',
     'testproject.issue_15',
     'testproject.issue_16',
+    'testproject.issue_29',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
