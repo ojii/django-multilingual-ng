@@ -1,0 +1,21 @@
+{% load i18n %}
+{% load multilingual_tags %}
+<div class="inline-group">
+{{ inline_admin_formset.formset.management_form }}
+{% for inline_admin_form in inline_admin_formset %}
+<div class="inline-related {% if forloop.last %}last-related{% endif %}">
+  <h2>Language:&nbsp;{{ forloop.counter|language_name }}
+      {% if inline_admin_formset.formset.deletable %}<span class="delete">{{ inline_admin_form.deletion_field.field }} {{ inline_admin_form.deletion_field.label_tag }}</span>{% endif %}
+      </h2>
+
+  {% if inline_admin_form.show_url %}
+  <p><a href="/r/{{ inline_admin_form.original.content_type_id }}/{{ inline_admin_form.original.id }}/">View on site</a></p>
+  {% endif %}
+
+  {% for fieldset in inline_admin_form %}
+    {% include "admin/fieldset.html" %}
+  {% endfor %}
+  {{ inline_admin_form.pk_field.field }}
+</div>
+{% endfor %}
+</div>

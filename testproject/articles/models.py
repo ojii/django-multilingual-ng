@@ -264,6 +264,8 @@ class Category(models.Model):
         # Again, field names would just work here, but if you need
         # correct list headers (from field.verbose_name) you have to
         # use the get_'field_name' functions here.
+        
+        # Note: this Admin class does not do anything in newforms-admin
         list_display = ('id', 'creator', 'created', 'name', 'description')
         search_fields = ('name', 'description')
 
@@ -297,3 +299,8 @@ class Article(models.Model):
         contents = models.TextField(verbose_name=_("The contents"),
                                     blank=True, null=False)
 
+from multilingual.compat import IS_NEWFORMS_ADMIN
+if IS_NEWFORMS_ADMIN:
+    from django.contrib import admin
+    admin.site.register(Article)
+    admin.site.register(Category)

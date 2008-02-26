@@ -14,16 +14,21 @@ from multilingual.exceptions import TranslationDoesNotExist
 from multilingual.fields import TranslationForeignKey
 from multilingual.manipulators import add_multilingual_manipulators
 from multilingual import manager
+from multilingual.compat import IS_NEWFORMS_ADMIN
 
-from django.contrib.admin.templatetags.admin_modify import StackedBoundRelatedObject
-
-class TransBoundRelatedObject(StackedBoundRelatedObject):
-    """
-    This class changes the template for translation objects.
-    """
-
-    def template_name(self):
-        return "admin/edit_inline_translations.html"
+if IS_NEWFORMS_ADMIN:
+    from django.contrib.admin import StackedInline, ModelAdmin
+    class MultilingualStackedInline(StackedInline):
+        template = "admin/edit_inline_translations_newforms.html"
+else:
+    from django.contrib.admin.templatetags.admin_modify import StackedBoundRelatedObject
+    class TransBoundRelatedObject(StackedBoundRelatedObject):
+        """
+        This class changes the template for translation objects.
+        """
+    
+        def template_name(self):
+            return "admin/edit_inline_translations.html"
 
 def translation_save_translated_fields(instance, **kwargs):
     """
@@ -260,8 +265,14 @@ class Translation:
         trans_attrs['language_id'] = models.IntegerField(blank=False, null=False, core=True,
                                                          choices=get_language_choices(),
                                                          db_index=True)
+
+        if IS_NEWFORMS_ADMIN:
+            edit_inline = True
+        else:
+            edit_inline = TransBoundRelatedObject
+
         trans_attrs['master'] = TranslationForeignKey(main_cls, blank=False, null=False,
-                                                      edit_inline=TransBoundRelatedObject,
+                                                      edit_inline=edit_inline,
                                                       related_name='translations',
                                                       num_in_admin=get_language_count(),
                                                       min_num_in_admin=get_language_count(),
@@ -332,9 +343,23 @@ def install_translation_library():
             attrs['is_translation_model'] = lambda self: True
             
         return _old_new(cls, name, bases, attrs)
-
     ModelBase.__new__ = staticmethod(multilingual_modelbase_new)
     ModelBase._multilingual_installed = True
+
+    if IS_NEWFORMS_ADMIN:
+        # Override ModelAdmin.__new__ to create automatic inline
+        # editor for multilingual models.
+        _old_admin_new = ModelAdmin.__new__
+        def multilingual_modeladmin_new(cls, model, admin_site):
+            if isinstance(model.objects, manager.Manager):
+                X = type('X',(MultilingualStackedInline,),
+                         {'model':model._meta.translation_model,
+                          'fk_name':'master',
+                          'extra':get_language_count(),
+                          'max_num':get_language_count()})
+                cls.inlines = [X]
+            return _old_admin_new(cls, model, admin_site)
+        ModelAdmin.__new__ = staticmethod(multilingual_modeladmin_new)
 
 # install the library
 install_translation_library()
