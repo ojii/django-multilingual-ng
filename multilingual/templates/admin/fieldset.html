@@ -3,9 +3,7 @@
   {% if fieldset.name %}<h2>{{ fieldset.name }}</h2>{% endif %}
   {% if fieldset.description %}<div class="description">{{ fieldset.description }}</div>{% endif %}
   {% for line in fieldset %}
-  	  {% ifnotequal forloop.counter 3 %}
-      	 <div class="form-row{% if line.errors %} errors{% endif %} {% for field in line %}{{ field.field.name }} {% endfor %} ">
-      {% endifnotequal %}
+      <div class="form-row{% if line.errors %} errors{% endif %} {% for field in line %}{{ field.field.name }} {% endfor %} ">
       {{ field.name }}
       {{ line.errors }}
       {% for field in line %}
@@ -22,8 +20,6 @@
           {% endif %}
           {% if field.field.field.help_text %}<p class="help">{{ field.field.field.help_text|safe }}</p>{% endif %}
       {% endfor %}
-  	  {% ifnotequal forloop.counter 3 %}
-      	</div>
-      {% endifnotequal %}
+      </div>
   {% endfor %}
 </fieldset>

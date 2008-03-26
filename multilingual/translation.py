@@ -357,7 +357,10 @@ def install_translation_library():
                           'fk_name':'master',
                           'extra':get_language_count(),
                           'max_num':get_language_count()})
-                cls.inlines = [X]
+                if cls.inlines:
+                    cls.inlines.append(X)
+                else:
+                    cls.inlines = [X]
             return _old_admin_new(cls, model, admin_site)
         ModelAdmin.__new__ = staticmethod(multilingual_modeladmin_new)
 
