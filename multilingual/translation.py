@@ -349,15 +349,21 @@ def install_translation_library():
     if IS_NEWFORMS_ADMIN:
         # Override ModelAdmin.__new__ to create automatic inline
         # editor for multilingual models.
+        class MultiType(type):
+            pass
         _old_admin_new = ModelAdmin.__new__
         def multilingual_modeladmin_new(cls, model, admin_site):
             if isinstance(model.objects, manager.Manager):
-                X = type('X',(MultilingualStackedInline,),
+                X = MultiType('X',(MultilingualStackedInline,),
                          {'model':model._meta.translation_model,
                           'fk_name':'master',
                           'extra':get_language_count(),
                           'max_num':get_language_count()})
                 if cls.inlines:
+                    for inline in cls.inlines:
+                        if X.__class__ == inline.__class__:
+                            cls.inlines.remove(inline)
+                            break
                     cls.inlines.append(X)
                 else:
                     cls.inlines = [X]
