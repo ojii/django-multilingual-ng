@@ -9,7 +9,12 @@ Django-multilingual: language-related settings and functions.
 from django.conf import settings
 LANGUAGES = settings.LANGUAGES
 
-from django.utils.translation import ugettext_lazy as _
+try:
+    from django.utils.translation import ugettext_lazy as _
+except ImportError:
+    # Implicitely imported before changeset 6582
+    pass
+
 from multilingual.exceptions import LanguageDoesNotExist
 
 try:
