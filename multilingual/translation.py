@@ -257,7 +257,7 @@ class Translation:
         class TransMeta:
             ordering = ('language_id',)
             unique_together = tuple(unique)
-            db_table = main_cls._meta.db_table + 'translation'
+            db_table = main_cls._meta.db_table + '_translation'
             app_label = main_cls._meta.app_label
     
         trans_attrs = cls.__dict__.copy()
