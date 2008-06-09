@@ -9,6 +9,7 @@ Django-multilingual: language-related settings and functions.
 from django.conf import settings
 LANGUAGES = settings.LANGUAGES
 
+from django.utils.translation import ugettext_lazy as _
 from multilingual.exceptions import LanguageDoesNotExist
 
 try:
@@ -25,7 +26,7 @@ def get_language_code(language_id):
     return LANGUAGES[(int(language_id or get_default_language())) - 1][0]
 
 def get_language_name(language_id):
-    return LANGUAGES[(int(language_id or get_default_language())) - 1][1]
+    return _(LANGUAGES[(int(language_id or get_default_language())) - 1][1])
 
 def get_language_id_list():
     return range(1, get_language_count() + 1)
