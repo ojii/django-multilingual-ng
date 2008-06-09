@@ -33,6 +33,9 @@ def get_language_code(language_id):
 def get_language_name(language_id):
     return _(LANGUAGES[(int(language_id or get_default_language())) - 1][1])
 
+def get_language_bidi(language_id):
+    return get_language_code(language_id) in settings.LANGUAGES_BIDI
+
 def get_language_id_list():
     return range(1, get_language_count() + 1)
 

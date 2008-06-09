@@ -15,7 +15,12 @@
                   <input type="hidden" name="{{ field.field.html_name }}" 
                   		 value="{{ forloop.parentloop.parentloop.parentloop.counter }}" />
           	  {% else %}
-                  {{ field.label_tag }}{{ field.field }}
+                  {{ field.label_tag }}
+                  {% if forloop.parentloop.parentloop.parentloop.counter|language_bidi %}
+                     <span style="direction: rtl; text-align: right;">{{ field.field }}</span>
+                  {% else %}
+                     <span style="direction: ltr; text-align: left;">{{ field.field }}</span>
+                  {% endif %}
               {% endifequal %}
           {% endif %}
           {% if field.field.field.help_text %}<p class="help">{{ field.field.field.help_text|safe }}</p>{% endif %}

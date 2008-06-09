@@ -11,7 +11,7 @@ import tokenize
 
 register = template.Library()
 
-from multilingual.languages import get_language_code, get_language_name
+from multilingual.languages import get_language_code, get_language_name, get_language_bidi
 
 def language_code(language_id):
     """
@@ -28,6 +28,14 @@ def language_name(language_id):
     return get_language_name(language_id)
     
 register.filter(language_name)
+
+def language_bidi(language_id):
+    """
+    Return whether the language with id=language_id is written right-to-left.
+    """
+    return get_language_bidi(language_id)
+
+register.filter(language_bidi)
 
 class EditTranslationNode(template.Node):
     def __init__(self, form_name, field_name, language=None):
