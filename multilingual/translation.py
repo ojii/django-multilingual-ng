@@ -159,7 +159,7 @@ def get_translation(self, language_id_or_code,
 
     if language_id not in self._translation_cache:
         if not create_if_necessary:
-            raise TranslationDoesNotExist
+            raise TranslationDoesNotExist(language_id)
         new_translation = self._meta.translation_model(master=self,
                                                        language_id=language_id)
         self._translation_cache[language_id] = new_translation

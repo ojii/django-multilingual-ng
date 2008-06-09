@@ -61,7 +61,7 @@ def get_language_id_from_id_or_code(language_id_or_code, use_default=True):
         i += 1
         if code == language_id_or_code:
             return i
-    raise LanguageDoesNotExist()
+    raise LanguageDoesNotExist(language_id_or_code)
 
 def get_language_idx(language_id_or_code):
     # to do: optimize
