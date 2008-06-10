@@ -260,13 +260,20 @@ class Translation:
             unique.append(('language_id',f))
 
         class TransMeta:
-            ordering = ('language_id',)
-            unique_together = tuple(unique)
+            pass
+
+        try:
+            meta = cls.Meta
+        except AttributeError:
+            meta = TransMeta
+        meta.ordering = ('language_id',)
+        meta.unique_together = tuple(unique)
+        meta.app_label = main_cls._meta.app_label
+        if not hasattr(meta, 'db_table'):
             db_table = main_cls._meta.db_table + '_translation'
-            app_label = main_cls._meta.app_label
     
         trans_attrs = cls.__dict__.copy()
-        trans_attrs['Meta'] = TransMeta
+        trans_attrs['Meta'] = meta
         trans_attrs['language_id'] = models.IntegerField(blank=False, null=False, core=True,
                                                          choices=get_language_choices(),
                                                          db_index=True)
