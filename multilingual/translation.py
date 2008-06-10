@@ -53,8 +53,13 @@ def translation_overwrite_previous(instance, **kwargs):
     move to newforms.
     """
     qs = instance.__class__.objects
-    qs = qs.filter(master=instance.master).filter(language_id=instance.language_id)
-    qs.delete()
+    try:
+        qs = qs.filter(master=instance.master).filter(language_id=instance.language_id)
+        qs.delete()
+    except ObjectDoesNotExist:
+        # We are probably loading a fixture that defines translation entities
+	# before their master entity.
+        pass
 
 def fill_translation_cache(instance):
     """
