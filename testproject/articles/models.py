@@ -14,6 +14,13 @@ Test models for the multilingual library.
 >>> from django.db.models import Q
 >>> set_default_language(1)
 
+### Check the table names
+
+>>> Category._meta.translation_model._meta.db_table
+'category_language'
+>>> Article._meta.translation_model._meta.db_table
+'articles_article_translation'
+
 ### Create the test data
 
 # Check both assigning via the proxy properties and set_* functions
@@ -242,9 +249,12 @@ class Category(models.Model):
         """
 
         name = models.CharField(verbose_name=_("The name"),
-                                blank=True, null=False, maxlength=250)
+                                maxlength=250)
         description = models.TextField(verbose_name=_("The description"),
                                        blank=True, null=False)
+
+    	class Meta:
+            db_table = 'category_language'
 
     def get_absolute_url(self):
         return "/" + str(self.id) + "/"
