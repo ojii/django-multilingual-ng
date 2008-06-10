@@ -58,7 +58,7 @@ def translation_overwrite_previous(instance, **kwargs):
         qs.delete()
     except ObjectDoesNotExist:
         # We are probably loading a fixture that defines translation entities
-	# before their master entity.
+        # before their master entity.
         pass
 
 def fill_translation_cache(instance):
@@ -266,12 +266,13 @@ class Translation:
             meta = cls.Meta
         except AttributeError:
             meta = TransMeta
+
         meta.ordering = ('language_id',)
         meta.unique_together = tuple(unique)
         meta.app_label = main_cls._meta.app_label
         if not hasattr(meta, 'db_table'):
-            db_table = main_cls._meta.db_table + '_translation'
-    
+            meta.db_table = main_cls._meta.db_table + '_translation'
+
         trans_attrs = cls.__dict__.copy()
         trans_attrs['Meta'] = meta
         trans_attrs['language_id'] = models.IntegerField(blank=False, null=False, core=True,
