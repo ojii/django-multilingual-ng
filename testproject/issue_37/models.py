@@ -2,6 +2,7 @@
 Models and unit tests for issues reported in the tracker.
 
 >>> from multilingual import set_default_language
+>>> from testproject.utils import to_str
 
 # test for issue #37
 # http://code.google.com/p/django-multilingual/issues/detail?id=37
@@ -12,11 +13,11 @@ Models and unit tests for issues reported in the tracker.
 >>> x.title = u'The Polish Title'
 >>> x.save()
 >>> x = ModelWithCustomPK.objects.get(pk='key1')
->>> x.title
-u'The Polish Title'
+>>> to_str(x.title)
+'The Polish Title'
 >>> set_default_language('en')
->>> x.title
-u'The English Title'
+>>> to_str(x.title)
+'The English Title'
 
 """
 

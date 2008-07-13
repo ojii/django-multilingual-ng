@@ -60,11 +60,10 @@ def new_lookup_inner(path, lookup_type, value, opts, table, column):
     except AttributeError:
         qn = connection.ops.quote_name
 
-    master_id_column_name = opts.pk.column
-#    import sys; sys.stderr.write('QQQ %r %r\n' % (opts, master_id_column_name))
-
-    condition = ('((%s.master_id = %s.id) AND (%s.language_id = %s))'
+    from django.conf import settings
+    condition = ('((%s.master_id = %s.%s) AND (%s.language_id = %s))'
                  % (new_table, current_table,
+                    opts.pk.column,
                     new_table, language_id))
     joins[qn(new_table)] = (qn(translation_opts.db_table), 'LEFT JOIN', condition)
 
@@ -118,8 +117,9 @@ class QAddTranslationData(object):
         for language_id in get_language_id_list():
             table_alias = get_translation_table_alias(trans_table_name,
                                                       language_id)
-            condition = ('((%s.master_id = %s.id) AND (%s.language_id = %s))'
-                         % (table_alias, master_table_name, table_alias,
+            condition = ('((%s.master_id = %s.%s) AND (%s.language_id = %s))'
+                         % (table_alias, master_table_name,
+                            opts.pk.column, table_alias,
                             language_id))
             joins[table_alias] = (trans_table_name, 'LEFT JOIN', condition)
         return joins, where, params
