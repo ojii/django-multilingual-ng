@@ -1,5 +1,5 @@
 from django.db import models
-from multilingual.query import MultilingualModelQuerySet, QAddTranslationData
+from multilingual.query import MultilingualModelQuerySet
 from multilingual.languages import *
 
 class Manager(models.Manager):
@@ -12,15 +12,5 @@ class Manager(models.Manager):
     """
 
     def get_query_set(self):
-        translation_model = self.model._meta.translation_model
-        select = {}
-        for language_id in get_language_id_list():
-            for fname in [f.attname for f in translation_model._meta.fields]:
-                trans_table_name = translation_model._meta.db_table
-                table_alias = get_translation_table_alias(trans_table_name, language_id)
-                field_alias = get_translated_field_alias(fname, language_id)
-
-                select[field_alias] = table_alias + '.' + fname
-
-        return MultilingualModelQuerySet(self.model).filter(QAddTranslationData()).extra(select=select)
+        return MultilingualModelQuerySet(self.model)
 

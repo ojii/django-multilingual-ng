@@ -14,7 +14,9 @@ from multilingual.exceptions import TranslationDoesNotExist
 from multilingual.fields import TranslationForeignKey
 from multilingual.manipulators import add_multilingual_manipulators
 from multilingual import manager
-from multilingual.compat import IS_NEWFORMS_ADMIN
+from multilingual.compat import IS_NEWFORMS_ADMIN, IS_QSRF
+
+from new import instancemethod
 
 if IS_NEWFORMS_ADMIN:
     from django.contrib.admin import StackedInline, ModelAdmin
@@ -39,7 +41,11 @@ def translation_save_translated_fields(instance, **kwargs):
     for l_id, translation in instance._translation_cache.iteritems():
         # set the translation ID just in case the translation was
         # created while instance was not stored in the DB yet
-        translation.master_id = instance.id
+
+        # note: we're using _get_pk_val here even though it is
+        # private, since that's the most reliable way to get the value
+        # on older Django (pk property did not exist yet)
+        translation.master_id = instance._get_pk_val()
         translation.save()
 
 def translation_overwrite_previous(instance, **kwargs):
@@ -223,7 +229,7 @@ class Translation:
                 # create the 'fname'_'language_code' proxy properties
                 for language_id in get_language_id_list():
                     language_code = get_language_code(language_id)
-                    fname_lng = fname + '_' + language_code
+                    fname_lng = fname + '_' + language_code.replace('-', '_')
                     translated_fields[fname_lng] = (field, language_id)
                     setattr(main_cls, fname_lng,
                             TranslatedFieldProxy(fname, fname_lng, field,
@@ -241,7 +247,15 @@ class Translation:
         for fname, field in cls.__dict__.items():
             if isinstance(field, models.fields.Field):
                 if getattr(field,'unique',False):
-                    field.unique = False
+                    try:
+                        field.unique = False
+                    except AttributeError:
+                        # newer Django defines unique as a property
+                        # that uses _unique to store data.  We're
+                        # jumping over the fence by setting _unique,
+                        # so this sucks, but this happens early enough
+                        # to be safe.
+                        field._unique = False
                     unique_fields.append(fname)
         return unique_fields
     get_unique_fields = classmethod(get_unique_fields)
@@ -296,6 +310,18 @@ class Translation:
     
         trans_model = ModelBase(translation_model_name, (models.Model,), trans_attrs)
         trans_model._meta.translated_fields = cls.create_translation_attrs(main_cls)
+
+        if IS_QSRF:
+            _old_init_name_map = main_cls._meta.__class__.init_name_map
+            def init_name_map(self):
+                cache = _old_init_name_map(self)
+                for name, field_and_lang_id in trans_model._meta.translated_fields.items():
+                    #import sys; sys.stderr.write('TM %r\n' % trans_model)
+                    cache[name] = (field_and_lang_id[0], trans_model, True, False)
+                return cache
+            main_cls._meta.init_name_map = instancemethod(init_name_map,
+                                                          main_cls._meta,
+                                                          main_cls._meta.__class__)
     
         main_cls._meta.translation_model = trans_model
         main_cls.get_translation = get_translation

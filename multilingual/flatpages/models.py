@@ -67,3 +67,8 @@ class MultilingualFlatPage(models.Model):
 
     def get_absolute_url(self):
         return self.url
+
+from multilingual.compat import IS_NEWFORMS_ADMIN
+
+if IS_NEWFORMS_ADMIN:
+    import multilingual.flatpages.admin
