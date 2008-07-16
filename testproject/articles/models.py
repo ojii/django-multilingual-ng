@@ -36,11 +36,12 @@ Test models for the multilingual library.
 >>> c.save()
 
 ### See if the test data was saved correctly
+### Note: first object comes from the initial fixture.
 
->>> c = Category.objects.all().order_by('id')[0]
+>>> c = Category.objects.all().order_by('id')[1]
 >>> to_str((c.name, c.get_name(1), c.get_name(2)))
 ('category 1', 'category 1', 'kategoria 1')
->>> c = Category.objects.all().order_by('id')[1]
+>>> c = Category.objects.all().order_by('id')[2]
 >>> to_str((c.name, c.get_name(1), c.get_name(2)))
 ('category 2', 'category 2', 'kategoria 2')
 
@@ -48,7 +49,7 @@ Test models for the multilingual library.
 ### Make sure the name and description properties obey
 ### set_default_language.
 
->>> c = Category.objects.all().order_by('id')[0]
+>>> c = Category.objects.all().order_by('id')[1]
 
 # set language: pl
 >>> set_default_language(2)
@@ -67,10 +68,10 @@ Test models for the multilingual library.
 
 # Read the entire Category objects from the DB again to see if
 # everything was saved correctly.
->>> c = Category.objects.all().order_by('id')[0]
+>>> c = Category.objects.all().order_by('id')[1]
 >>> to_str((c.name, c.get_name('en'), c.get_name('pl')))
 ('cat 1', 'cat 1', 'kat 1')
->>> c = Category.objects.all().order_by('id')[1]
+>>> c = Category.objects.all().order_by('id')[2]
 >>> to_str((c.name, c.get_name('en'), c.get_name('pl')))
 ('category 2', 'category 2', 'kategoria 2')
 
@@ -78,7 +79,7 @@ Test models for the multilingual library.
 
 >>> set_default_language(1)
 >>> to_str([c.name for c in  Category.objects.all().order_by('name_en')])
-['cat 1', 'category 2']
+['Fixture category', 'cat 1', 'category 2']
 
 ### Check ordering
 
@@ -91,17 +92,17 @@ Test models for the multilingual library.
 >>> c.save()
 
 >>> to_str([c.name for c in  Category.objects.all().order_by('name_en')])
-['category 2', 'zzz cat 1']
+['Fixture category', 'category 2', 'zzz cat 1']
 >>> to_str([c.name for c in  Category.objects.all().order_by('name')])
-['category 2', 'zzz cat 1']
+['Fixture category', 'category 2', 'zzz cat 1']
 >>> to_str([c.name for c in  Category.objects.all().order_by('-name')])
-['zzz cat 1', 'category 2']
+['zzz cat 1', 'category 2', 'Fixture category']
 
 >>> set_default_language(2)
 >>> to_str([c.name for c in  Category.objects.all().order_by('name')])
-['kat 1', 'kategoria 2']
+['Fixture kategoria', 'kat 1', 'kategoria 2']
 >>> to_str([c.name for c in  Category.objects.all().order_by('-name')])
-['kategoria 2', 'kat 1']
+['kategoria 2', 'kat 1', 'Fixture kategoria']
 
 ### Check filtering
 
@@ -121,7 +122,7 @@ Test models for the multilingual library.
 >>> set_default_language(1)
 >>> to_str([c.name for c in
 ...  Category.objects.all().filter(Q(name__contains='2')|Q(name_pl__contains='kat'))])
-['zzz cat 1', 'category 2']
+['Fixture category', 'zzz cat 1', 'category 2']
 
 >>> set_default_language(1)
 >>> to_str([c.name for c in  Category.objects.all().filter(name_en__contains='2')])
@@ -129,15 +130,15 @@ Test models for the multilingual library.
 
 >>> set_default_language(1)
 >>> to_str([c.name for c in  Category.objects.all().filter(Q(name_pl__contains='kat'))])
-['zzz cat 1', 'category 2']
+['Fixture category', 'zzz cat 1', 'category 2']
 
 >>> set_default_language('pl')
 >>> to_str([c.name for c in  Category.objects.all().filter(name__contains='k')])
-['kat 1', 'kategoria 2']
+['Fixture kategoria', 'kat 1', 'kategoria 2']
 
 >>> set_default_language('pl')
 >>> to_str([c.name for c in  Category.objects.all().filter(Q(name__contains='kategoria'))])
-['kategoria 2']
+['Fixture kategoria', 'kategoria 2']
 
 ### Check specifying query set language
 >>> c_en = Category.objects.all().for_language('en') 
@@ -148,16 +149,16 @@ Test models for the multilingual library.
 'kat 1'
 
 >>> to_str([c.name for c in  c_en.order_by('name')])
-['category 2', 'zzz cat 1']
+['Fixture category', 'category 2', 'zzz cat 1']
 >>> to_str([c.name for c in c_pl.order_by('-name')])
-['kategoria 2', 'kat 1']
+['kategoria 2', 'kat 1', 'Fixture kategoria']
 
->>> c = c_en.get(id=1)
+>>> c = c_en.get(id=2)
 >>> c.name = 'test'
 >>> to_str((c.name, c.name_en, c.name_pl))
 ('test', 'test', 'kat 1')
 
->>> c = c_pl.get(id=1)
+>>> c = c_pl.get(id=2)
 >>> c.name = 'test'
 >>> to_str((c.name, c.name_en, c.name_pl))
 ('test', 'zzz cat 1', 'test')
