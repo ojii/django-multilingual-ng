@@ -39,5 +39,5 @@ class Gallery(models.Model):
     modified = models.DateField(_('Modified'), auto_now=True)
 
     class Translation(multilingual.Translation):
-        title = models.CharField(_('Title'), maxlength=50, unique = True)
+        title = models.CharField(_('Title'), max_length=50, unique = True)
         description = models.TextField(_('Description'), blank=True)

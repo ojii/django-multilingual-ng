@@ -14,7 +14,7 @@ class Page(models.Model):
 
     class Translation(multilingual.Translation):
         title = models.CharField(verbose_name=_("The title"),
-                                 blank=True, null=False, maxlength=250)
+                                 blank=True, null=False, max_length=250)
         contents = models.TextField(verbose_name=_("The contents"),
                                     blank=True, null=False)
 

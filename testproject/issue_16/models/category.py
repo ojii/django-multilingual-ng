@@ -13,7 +13,7 @@ class Category(models.Model):
 
     class Translation(multilingual.Translation):
         name = models.CharField(verbose_name=_("The name"),
-                                blank=True, null=False, maxlength=250)
+                                blank=True, null=False, max_length=250)
 
     class Meta:
         app_label = 'issue_16'

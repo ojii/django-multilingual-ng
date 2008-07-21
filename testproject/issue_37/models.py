@@ -31,8 +31,8 @@ except ImportError:
 
 class ModelWithCustomPK(models.Model):
     
-    custompk = models.CharField(maxlength=5, primary_key=True)
+    custompk = models.CharField(max_length=5, primary_key=True)
     
     class Translation(multilingual.Translation):
-        title = models.CharField(_('Title'), maxlength=50, unique = True)
+        title = models.CharField(_('Title'), max_length=50, unique = True)
 

@@ -250,7 +250,7 @@ class Category(models.Model):
         """
 
         name = models.CharField(verbose_name=_("The name"),
-                                maxlength=250)
+                                max_length=250)
         description = models.TextField(verbose_name=_("The description"),
                                        blank=True, null=False)
 
@@ -306,7 +306,7 @@ class Article(models.Model):
     # And now the translatable fields
     class Translation(multilingual.Translation):
         title = models.CharField(verbose_name=_("The title"),
-                                blank=True, null=False, maxlength=250)
+                                blank=True, null=False, max_length=250)
         contents = models.TextField(verbose_name=_("The contents"),
                                     blank=True, null=False)
 
