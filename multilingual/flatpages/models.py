@@ -3,11 +3,7 @@ from django.db import models
 from django.contrib.sites.models import Site
 import multilingual
 
-try:
-    from django.utils.translation import ugettext as _
-except:
-    # if this fails then _ is a builtin
-    pass
+from django.utils.translation import ugettext as _
 
 class MultilingualFlatPage(models.Model):
     # non-translatable fields first
@@ -43,20 +39,6 @@ class MultilingualFlatPage(models.Model):
         verbose_name = _('multilingual flat page')
         verbose_name_plural = _('multilingual flat pages')
         ordering = ('url',)
-    class Admin:
-        fields = (
-            (None, {'fields': ('url', 'sites')}),
-            ('Advanced options', {'classes': 'collapse', 'fields': ('enable_comments', 'registration_required', 'template_name')}),
-        )
-        list_filter = ('sites',)
-        search_fields = ('url', 'title')
-
-    def __str__(self):
-        # this method can be removed after the landing of newforms-admin
-        try:
-            return "%s -- %s" % (self.url, self.title)
-        except multilingual.TranslationDoesNotExist:
-            return "-not-available-"
 
     def __unicode__(self):
         # note that you can use name and description fields as usual
@@ -68,7 +50,3 @@ class MultilingualFlatPage(models.Model):
     def get_absolute_url(self):
         return self.url
 
-from multilingual.compat import IS_NEWFORMS_ADMIN
-
-if IS_NEWFORMS_ADMIN:
-    import multilingual.flatpages.admin

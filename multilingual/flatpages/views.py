@@ -7,10 +7,7 @@ from django.core.xheaders import populate_xheaders
 from django.utils.translation import get_language
 import multilingual
 
-try:
-    from django.utils.safestring import mark_safe
-except ImportError:
-    mark_safe = lambda s: s
+from django.utils.safestring import mark_safe
 
 DEFAULT_TEMPLATE = 'flatpages/default.html'
 
