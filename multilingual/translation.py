@@ -4,33 +4,22 @@ Support for models' internal Translation class.
 
 ## TO DO: this is messy and needs to be cleaned up
 
+from django.contrib.admin import StackedInline, ModelAdmin
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
+from django.db.models import signals
 from django.db.models.base import ModelBase
 from django.dispatch.dispatcher import connect
-from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import signals
 from multilingual.languages import *
 from multilingual.exceptions import TranslationDoesNotExist
 from multilingual.fields import TranslationForeignKey
 from multilingual.manipulators import add_multilingual_manipulators
 from multilingual import manager
-from multilingual.compat import IS_NEWFORMS_ADMIN, IS_QSRF
 
 from new import instancemethod
 
-if IS_NEWFORMS_ADMIN:
-    from django.contrib.admin import StackedInline, ModelAdmin
-    class MultilingualStackedInline(StackedInline):
-        template = "admin/edit_inline_translations_newforms.html"
-else:
-    from django.contrib.admin.templatetags.admin_modify import StackedBoundRelatedObject
-    class TransBoundRelatedObject(StackedBoundRelatedObject):
-        """
-        This class changes the template for translation objects.
-        """
-    
-        def template_name(self):
-            return "admin/edit_inline_translations.html"
+class MultilingualStackedInline(StackedInline):
+    template = "admin/edit_inline_translations_newforms.html"
 
 def translation_save_translated_fields(instance, **kwargs):
     """
@@ -293,10 +282,7 @@ class Translation:
                                                          choices=get_language_choices(),
                                                          db_index=True)
 
-        if IS_NEWFORMS_ADMIN:
-            edit_inline = True
-        else:
-            edit_inline = TransBoundRelatedObject
+        edit_inline = True
 
         trans_attrs['master'] = TranslationForeignKey(main_cls, blank=False, null=False,
                                                       edit_inline=edit_inline,
@@ -311,17 +297,16 @@ class Translation:
         trans_model = ModelBase(translation_model_name, (models.Model,), trans_attrs)
         trans_model._meta.translated_fields = cls.create_translation_attrs(main_cls)
 
-        if IS_QSRF:
-            _old_init_name_map = main_cls._meta.__class__.init_name_map
-            def init_name_map(self):
-                cache = _old_init_name_map(self)
-                for name, field_and_lang_id in trans_model._meta.translated_fields.items():
-                    #import sys; sys.stderr.write('TM %r\n' % trans_model)
-                    cache[name] = (field_and_lang_id[0], trans_model, True, False)
-                return cache
-            main_cls._meta.init_name_map = instancemethod(init_name_map,
-                                                          main_cls._meta,
-                                                          main_cls._meta.__class__)
+        _old_init_name_map = main_cls._meta.__class__.init_name_map
+        def init_name_map(self):
+            cache = _old_init_name_map(self)
+            for name, field_and_lang_id in trans_model._meta.translated_fields.items():
+                #import sys; sys.stderr.write('TM %r\n' % trans_model)
+                cache[name] = (field_and_lang_id[0], trans_model, True, False)
+            return cache
+        main_cls._meta.init_name_map = instancemethod(init_name_map,
+                                                      main_cls._meta,
+                                                      main_cls._meta.__class__)
     
         main_cls._meta.translation_model = trans_model
         main_cls.get_translation = get_translation
@@ -372,11 +357,6 @@ def install_translation_library():
             if not 'objects' in attrs:
                 attrs['objects'] = manager.Manager()
     
-            # Override the admin manager as well, or the admin views will
-            # not see the translation data.
-            if 'Admin' in attrs:
-                attrs['Admin'].manager = attrs['objects']
-
             # Install a hack to let add_multilingual_manipulators know
             # this is a translatable model
             attrs['is_translation_model'] = lambda self: True
@@ -385,29 +365,28 @@ def install_translation_library():
     ModelBase.__new__ = staticmethod(multilingual_modelbase_new)
     ModelBase._multilingual_installed = True
 
-    if IS_NEWFORMS_ADMIN:
-        # Override ModelAdmin.__new__ to create automatic inline
-        # editor for multilingual models.
-        class MultiType(type):
-            pass
-        _old_admin_new = ModelAdmin.__new__
-        def multilingual_modeladmin_new(cls, model, admin_site):
-            if isinstance(model.objects, manager.Manager):
-                X = MultiType('X',(MultilingualStackedInline,),
-                         {'model':model._meta.translation_model,
-                          'fk_name':'master',
-                          'extra':get_language_count(),
-                          'max_num':get_language_count()})
-                if cls.inlines:
-                    for inline in cls.inlines:
-                        if X.__class__ == inline.__class__:
-                            cls.inlines.remove(inline)
-                            break
-                    cls.inlines.append(X)
-                else:
-                    cls.inlines = [X]
-            return _old_admin_new(cls, model, admin_site)
-        ModelAdmin.__new__ = staticmethod(multilingual_modeladmin_new)
+    # Override ModelAdmin.__new__ to create automatic inline
+    # editor for multilingual models.
+    class MultiType(type):
+        pass
+    _old_admin_new = ModelAdmin.__new__
+    def multilingual_modeladmin_new(cls, model, admin_site):
+        if isinstance(model.objects, manager.Manager):
+            X = MultiType('X',(MultilingualStackedInline,),
+                     {'model':model._meta.translation_model,
+                      'fk_name':'master',
+                      'extra':get_language_count(),
+                      'max_num':get_language_count()})
+            if cls.inlines:
+                for inline in cls.inlines:
+                    if X.__class__ == inline.__class__:
+                        cls.inlines.remove(inline)
+                        break
+                cls.inlines.append(X)
+            else:
+                cls.inlines = [X]
+        return _old_admin_new(cls, model, admin_site)
+    ModelAdmin.__new__ = staticmethod(multilingual_modeladmin_new)
 
 # install the library
 install_translation_library()
