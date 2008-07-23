@@ -372,11 +372,7 @@ def install_translation_library():
     _old_admin_new = ModelAdmin.__new__
     def multilingual_modeladmin_new(cls, model, admin_site):
         if isinstance(model.objects, manager.Manager):
-            X = MultiType('X',(MultilingualStackedInline,),
-                     {'model':model._meta.translation_model,
-                      'fk_name':'master',
-                      'extra':get_language_count(),
-                      'max_num':get_language_count()})
+            X = cls.get_translation_modeladmin(model)
             if cls.inlines:
                 for inline in cls.inlines:
                     if X.__class__ == inline.__class__:
@@ -386,7 +382,15 @@ def install_translation_library():
             else:
                 cls.inlines = [X]
         return _old_admin_new(cls, model, admin_site)
+    def get_translation_modeladmin(cls, model):
+            X = MultiType('X',(MultilingualStackedInline,),
+                     {'model':model._meta.translation_model,
+                      'fk_name':'master',
+                      'extra':get_language_count(),
+                      'max_num':get_language_count()})
+            return X
     ModelAdmin.__new__ = staticmethod(multilingual_modeladmin_new)
+    ModelAdmin.get_translation_modeladmin = classmethod(get_translation_modeladmin)
 
 # install the library
 install_translation_library()
