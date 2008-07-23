@@ -18,7 +18,7 @@ from multilingual import manager
 
 from new import instancemethod
 
-class MultilingualStackedInline(StackedInline):
+class TranslationModelAdmin(StackedInline):
     template = "admin/edit_inline_translations_newforms.html"
 
 def translation_save_translated_fields(instance, **kwargs):
@@ -179,7 +179,7 @@ class Translation:
         # fully created
         connect(cls.finish_multilingual_class, signal=signals.class_prepared,
                 sender=main_cls, weak=False)
-    
+
         # connect the post_save signal on master class to a handler
         # that saves translations
         connect(translation_save_translated_fields, signal=signals.post_save,
@@ -198,23 +198,23 @@ class Translation:
         language_id) tuples.
         """
         translated_fields = {}
-    
+
         for fname, field in cls.__dict__.items():
             if isinstance(field, models.fields.Field):
                 translated_fields[fname] = (field, None)
-    
+
                 # add get_'fname' and set_'fname' methods to main_cls
                 getter = getter_generator(fname, getattr(field, 'verbose_name', fname))
                 setattr(main_cls, 'get_' + fname, getter)
-    
+
                 setter = setter_generator(fname)
                 setattr(main_cls, 'set_' + fname, setter)
-    
+
                 # add the 'fname' proxy property that allows reads
                 # from and writing to the appropriate translation
                 setattr(main_cls, fname,
                         TranslatedFieldProxy(fname, fname, field))
-    
+
                 # create the 'fname'_'language_code' proxy properties
                 for language_id in get_language_id_list():
                     language_code = get_language_code(language_id)
@@ -232,7 +232,7 @@ class Translation:
         be augmented by the language.
         """
         unique_fields = []
-    
+
         for fname, field in cls.__dict__.items():
             if isinstance(field, models.fields.Field):
                 if getattr(field,'unique',False):
@@ -293,7 +293,7 @@ class Translation:
         trans_attrs['__str__'] = lambda self: ("%s object, language_code=%s"
                                                % (translation_model_name,
                                                   get_language_code(self.language_id)))
-    
+
         trans_model = ModelBase(translation_model_name, (models.Model,), trans_attrs)
         trans_model._meta.translated_fields = cls.create_translation_attrs(main_cls)
 
@@ -307,7 +307,7 @@ class Translation:
         main_cls._meta.init_name_map = instancemethod(init_name_map,
                                                       main_cls._meta,
                                                       main_cls._meta.__class__)
-    
+
         main_cls._meta.translation_model = trans_model
         main_cls.get_translation = get_translation
         main_cls.fill_translation_cache = fill_translation_cache
@@ -340,7 +340,7 @@ def install_translation_library():
             if not issubclass(attrs['Translation'], Translation):
                 raise ValueError, ("%s.Translation must be a subclass "
                                    + " of multilingual.Translation.") % (name,)
-            
+
             # Make sure that if the class specifies objects then it is
             # a subclass of our Manager.
             #
@@ -356,20 +356,19 @@ def install_translation_library():
             # Change the default manager to multilingual.Manager.
             if not 'objects' in attrs:
                 attrs['objects'] = manager.Manager()
-    
+
             # Install a hack to let add_multilingual_manipulators know
             # this is a translatable model
             attrs['is_translation_model'] = lambda self: True
-            
+
         return _old_new(cls, name, bases, attrs)
     ModelBase.__new__ = staticmethod(multilingual_modelbase_new)
     ModelBase._multilingual_installed = True
 
     # Override ModelAdmin.__new__ to create automatic inline
     # editor for multilingual models.
-    class MultiType(type):
-        pass
     _old_admin_new = ModelAdmin.__new__
+
     def multilingual_modeladmin_new(cls, model, admin_site):
         if isinstance(model.objects, manager.Manager):
             X = cls.get_translation_modeladmin(model)
@@ -382,13 +381,21 @@ def install_translation_library():
             else:
                 cls.inlines = [X]
         return _old_admin_new(cls, model, admin_site)
+
     def get_translation_modeladmin(cls, model):
-            X = MultiType('X',(MultilingualStackedInline,),
-                     {'model':model._meta.translation_model,
-                      'fk_name':'master',
-                      'extra':get_language_count(),
-                      'max_num':get_language_count()})
-            return X
+        if hasattr(cls, 'Translation'):
+            tr_cls = cls.Translation
+            if not issubclass(tr_cls, TranslationModelAdmin):
+                raise ValueError, ("%s.Translation must be a subclass "
+                                   + " of multilingual.TranslationModelAdmin.") % cls.name
+        else:
+            tr_cls = TranslationModelAdmin
+        tr_cls.model = model._meta.translation_model
+        tr_cls.fk_name = 'master'
+        tr_cls.extra = get_language_count()
+        tr_cls.max_num = get_language_count()
+        return tr_cls
+
     ModelAdmin.__new__ = staticmethod(multilingual_modeladmin_new)
     ModelAdmin.get_translation_modeladmin = classmethod(get_translation_modeladmin)
 
