@@ -1,5 +1,8 @@
 from django.conf.urls.defaults import *
+from django.contrib import admin
 from articles.models import *
+
+admin.autodiscover()
 
 urlpatterns = patterns('',
     (r'^$', 'django.views.generic.list_detail.object_list',
@@ -10,18 +13,6 @@ urlpatterns = patterns('',
       'post_save_redirect': '/'}),
     (r'^new/$', 'django.views.generic.create_update.create_object',
      {'model': Category}),
+
+    (r'^admin/(.*)', admin.site.root),
 )
-
-# handle both newforms and oldforms admin URL
-
-from multilingual.compat import IS_NEWFORMS_ADMIN
-if IS_NEWFORMS_ADMIN:
-    from django.contrib import admin
-
-    urlpatterns += patterns('',
-        (r'^admin/(.*)', admin.site.root),
-    )
-else:
-    urlpatterns += patterns('',
-        (r'^admin/', include('django.contrib.admin.urls')),
-    )

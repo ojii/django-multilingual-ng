@@ -141,7 +141,7 @@ Test models for the multilingual library.
 ['Fixture kategoria', 'kategoria 2']
 
 ### Check specifying query set language
->>> c_en = Category.objects.all().for_language('en') 
+>>> c_en = Category.objects.all().for_language('en')
 >>> c_pl = Category.objects.all().for_language(2)  # both ID and code work here
 >>> to_str(c_en.get(name__contains='1').name)
 'zzz cat 1'
@@ -225,7 +225,7 @@ class Category(models.Model):
     """
     Test model for multilingual content: a simplified Category.
     """
-    
+
     # First, some fields that do not need translations
     creator = models.ForeignKey(User, verbose_name=_("Created by"),
                                 blank=True, null=True)
@@ -241,7 +241,7 @@ class Category(models.Model):
 
         The multilingual machinery will automatically add these to the
         Category class:
-        
+
          * get_name(language_id=None)
          * set_name(value, language_id=None)
          * get_description(language_id=None)
@@ -270,15 +270,6 @@ class Category(models.Model):
     def __str__(self):
         # compatibility
         return str(self.__unicode__())
-    
-    class Admin:
-        # Again, field names would just work here, but if you need
-        # correct list headers (from field.verbose_name) you have to
-        # use the get_'field_name' functions here.
-        
-        # Note: this Admin class does not do anything in newforms-admin
-        list_display = ('id', 'creator', 'created', 'name', 'description')
-        search_fields = ('name', 'description')
 
     class Meta:
         verbose_name_plural = 'categories'
@@ -302,16 +293,10 @@ class Article(models.Model):
                                  blank=True, null=True)
 
     objects = CustomArticleManager()
-    
+
     # And now the translatable fields
     class Translation(multilingual.Translation):
         title = models.CharField(verbose_name=_("The title"),
                                 blank=True, null=False, max_length=250)
         contents = models.TextField(verbose_name=_("The contents"),
                                     blank=True, null=False)
-
-from multilingual.compat import IS_NEWFORMS_ADMIN
-if IS_NEWFORMS_ADMIN:
-    from django.contrib import admin
-    admin.site.register(Article)
-    admin.site.register(Category)
