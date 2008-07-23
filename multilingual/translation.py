@@ -389,7 +389,7 @@ def install_translation_library():
                 raise ValueError, ("%s.Translation must be a subclass "
                                    + " of multilingual.TranslationModelAdmin.") % cls.name
         else:
-            tr_cls = TranslationModelAdmin
+            tr_cls = type("%s.Translation" % cls.__name__, (TranslationModelAdmin,), {})
         tr_cls.model = model._meta.translation_model
         tr_cls.fk_name = 'master'
         tr_cls.extra = get_language_count()
