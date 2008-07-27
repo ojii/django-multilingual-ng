@@ -45,7 +45,7 @@ class EditTranslationNode(template.Node):
 
     def render(self, context):
         form = resolve_variable(self.form_name, context)
-        model = form.manipulator.model
+        model = form._meta.model
         trans_model = model._meta.translation_model
         if self.language:
             language_id = self.language.resolve(context)

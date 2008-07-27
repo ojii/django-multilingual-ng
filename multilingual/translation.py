@@ -369,7 +369,7 @@ def install_translation_library():
     # editor for multilingual models.
     _old_admin_new = ModelAdmin.__new__
 
-    def multilingual_modeladmin_new(cls, model, admin_site):
+    def multilingual_modeladmin_new(cls, model, admin_site, obj=None):
         if isinstance(model.objects, manager.Manager):
             X = cls.get_translation_modeladmin(model)
             if cls.inlines:
@@ -380,7 +380,7 @@ def install_translation_library():
                 cls.inlines.append(X)
             else:
                 cls.inlines = [X]
-        return _old_admin_new(cls, model, admin_site)
+        return _old_admin_new(cls, model, admin_site, obj)
 
     def get_translation_modeladmin(cls, model):
         if hasattr(cls, 'Translation'):
