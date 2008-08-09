@@ -9,7 +9,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import signals
 from django.db.models.base import ModelBase
-from django.dispatch.dispatcher import connect
 from multilingual.languages import *
 from multilingual.exceptions import TranslationDoesNotExist
 from multilingual.fields import TranslationForeignKey
@@ -177,12 +176,12 @@ class Translation:
 
         # delay the creation of the *Translation until the master model is
         # fully created
-        connect(cls.finish_multilingual_class, signal=signals.class_prepared,
+        signals.class_prepared.connect(cls.finish_multilingual_class,
                 sender=main_cls, weak=False)
 
         # connect the post_save signal on master class to a handler
         # that saves translations
-        connect(translation_save_translated_fields, signal=signals.post_save,
+        signals.post_save.connect(translation_save_translated_fields,
                 sender=main_cls)
 
     contribute_to_class = classmethod(contribute_to_class)
@@ -315,12 +314,12 @@ class Translation:
         # Note: don't fill the translation cache in post_init, as all
         # the extra values selected by QAddTranslationData will be
         # assigned AFTER init()
-#        connect(fill_translation_cache, signal=signals.post_init,
+#        signals.post_init.connect(fill_translation_cache,
 #                sender=main_cls)
 
         # connect the pre_save signal on translation class to a
         # function removing previous translation entries.
-        connect(translation_overwrite_previous, signal=signals.pre_save,
+        signals.pre_save.connect(translation_overwrite_previous,
                 sender=trans_model, weak=False)
 
     finish_multilingual_class = classmethod(finish_multilingual_class)

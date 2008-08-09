@@ -62,7 +62,7 @@ class MultilingualChangeManipulator(django_manipulators.AutomaticChangeManipulat
         self.fix_translation_data(new_data)
         super(MultilingualChangeManipulator, self).do_html2python(new_data)
 
-def add_multilingual_manipulators(sender):
+def add_multilingual_manipulators(sender, **kwargs):
     """
     A replacement for django.db.models.manipulators that installs
     multilingual manipulators for translatable models.
@@ -80,5 +80,5 @@ def add_multilingual_manipulators(sender):
 from django.dispatch import dispatcher
 from django.db.models import signals
 
-dispatcher.disconnect(django_manipulators.add_manipulators, signal=signals.class_prepared)
-dispatcher.connect(add_multilingual_manipulators, signal=signals.class_prepared)
+signals.class_prepared.disconnect(django_manipulators.add_manipulators)
+signals.class_prepared.connect(add_multilingual_manipulators)
