@@ -29,7 +29,7 @@ class MultilingualQuery(Query):
         super(MultilingualQuery, self).__init__(model, connection, where=where)
         opts = self.model._meta
         qn = self.quote_name_unless_alias
-        qn2 = self.connection.ops.quote_name        
+        qn2 = self.connection.ops.quote_name
         master_table_name = opts.db_table
         translation_opts = opts.translation_model._meta
         trans_table_name = translation_opts.db_table
@@ -43,7 +43,7 @@ class MultilingualQuery(Query):
                         language_id)
                     extra_select[field_alias] = qn2(table_alias) + '.' + qn2(fname)
             self.add_extra(extra_select, None,None,None,None,None)
-    
+
     def clone(self, klass=None, **kwargs):
         obj = super(MultilingualQuery, self).clone(klass=klass, **kwargs)
         obj.extra_join = self.extra_join
@@ -83,7 +83,7 @@ class MultilingualQuery(Query):
         return (from_, result[1])
 
     def add_filter(self, filter_expr, connector=AND, negate=False, trim=False,
-            can_reuse=None):
+            can_reuse=None, process_extras=True):
         """Copied from add_filter to generate WHERES for translation fields.
         """
         arg, value = filter_expr
@@ -104,20 +104,25 @@ class MultilingualQuery(Query):
                 raise ValueError("Cannot use None as a query value")
             lookup_type = 'isnull'
             value = True
+        elif (value == '' and lookup_type == 'exact' and
+              connection.features.interprets_empty_strings_as_nulls):
+            lookup_type = 'isnull'
+            value = True
         elif callable(value):
             value = value()
 
         opts = self.get_meta()
         alias = self.get_initial_alias()
         allow_many = trim or not negate
-
+        
         try:
-            field, target, opts, join_list, last = self.setup_joins(parts, opts,
-                    alias, True, allow_many, can_reuse=can_reuse)
+            field, target, opts, join_list, last, extra_filters = self.setup_joins(
+                    parts, opts, alias, True, allow_many, can_reuse=can_reuse,
+                    negate=negate, process_extras=process_extras)
         except MultiJoin, e:
-            self.split_exclude(filter_expr, LOOKUP_SEP.join(parts[:e.level]))
+            self.split_exclude(filter_expr, LOOKUP_SEP.join(parts[:e.level]),
+                    can_reuse)
             return
-
 
         #NOTE: here comes Django Multilingual
         if hasattr(opts, 'translation_model'):
@@ -188,26 +193,23 @@ class MultilingualQuery(Query):
             join_it = iter(join_list)
             table_it = iter(self.tables)
             join_it.next(), table_it.next()
+            table_promote = False
+            join_promote = False
             for join in join_it:
                 table = table_it.next()
                 if join == table and self.alias_refcount[join] > 1:
                     continue
-                self.promote_alias(join)
+                join_promote = self.promote_alias(join)
                 if table != join:
-                    self.promote_alias(table)
+                    table_promote = self.promote_alias(table)
                 break
-            for join in join_it:
-                self.promote_alias(join)
-            for table in table_it:
-                # Some of these will have been promoted from the join_list, but
-                # that's harmless.
-                self.promote_alias(table)
+            self.promote_alias_chain(join_it, join_promote)
+            self.promote_alias_chain(table_it, table_promote)
 
         self.where.add((alias, col, field, lookup_type, value), connector)
 
         if negate:
-            for alias in join_list:
-                self.promote_alias(alias)
+            self.promote_alias_chain(join_list)
             if lookup_type != 'isnull':
                 if final > 1:
                     for alias in join_list:
@@ -229,10 +231,15 @@ class MultilingualQuery(Query):
 
         if can_reuse is not None:
             can_reuse.update(join_list)
+        if process_extras:
+            for filter in extra_filters:
+                self.add_filter(filter, negate=negate, can_reuse=can_reuse,
+                        process_extras=False)
 
     def _setup_joins_with_translation(self, names, opts, alias,
                                       dupe_multis, allow_many=True,
-                                      allow_explicit_fk=False, can_reuse=None):
+                                      allow_explicit_fk=False, can_reuse=None,
+                                      negate=False, process_extras=True):
         """
         This is based on a full copy of Query.setup_joins because
         currently I see no way to handle it differently.
@@ -257,6 +264,7 @@ class MultilingualQuery(Query):
         last = [0]
         dupe_set = set()
         exclusions = set()
+        extra_filters = []
         for pos, name in enumerate(names):
             try:
                 exclusions.add(int_alias)
@@ -315,7 +323,6 @@ class MultilingualQuery(Query):
                     #NOTE: End Django Multilingual specific code
             elif model:
                 # The field lives on a base class of the current model.
-                alias_list = []
                 for int_model in opts.get_base_chain(model):
                     lhs_col = opts.parents[int_model].column
                     dedupe = lhs_col in opts.duplicate_targets
@@ -340,6 +347,8 @@ class MultilingualQuery(Query):
                 exclusions.update(self.dupe_avoidance.get((id(opts), dupe_col),
                         ()))
 
+            if process_extras and hasattr(field, 'extra_filters'):
+                extra_filters.extend(field.extra_filters(names, pos, negate))
             if direct:
                 if m2m:
                     # Many-to-many field defined on the current model.
@@ -362,10 +371,15 @@ class MultilingualQuery(Query):
                     int_alias = self.join((alias, table1, from_col1, to_col1),
                             dupe_multis, exclusions, nullable=True,
                             reuse=can_reuse)
-                    alias = self.join((int_alias, table2, from_col2, to_col2),
-                            dupe_multis, exclusions, nullable=True,
-                            reuse=can_reuse)
-                    joins.extend([int_alias, alias])
+                    if int_alias == table2 and from_col2 == to_col2:
+                        joins.append(int_alias)
+                        alias = int_alias
+                    else:
+                        alias = self.join(
+                                (int_alias, table2, from_col2, to_col2),
+                                dupe_multis, exclusions, nullable=True,
+                                reuse=can_reuse)
+                        joins.extend([int_alias, alias])
                 elif field.rel:
                     # One-to-one or many-to-one field
                     if cached_data:
@@ -443,13 +457,14 @@ class MultilingualQuery(Query):
         if pos != len(names) - 1:
             raise FieldError("Join on field %r not permitted." % name)
 
-        return field, target, opts, joins, last
+        return field, target, opts, joins, last, extra_filters
 
     def setup_joins(self, names, opts, alias, dupe_multis, allow_many=True,
-            allow_explicit_fk=False, can_reuse=None):
+            allow_explicit_fk=False, can_reuse=None, negate=False,
+            process_extras=True):
         return self._setup_joins_with_translation(names, opts, alias, dupe_multis,
                                                   allow_many, allow_explicit_fk,
-                                                  can_reuse)
+                                                  can_reuse, negate, process_extras)
 
 class MultilingualModelQuerySet(QuerySet):
     """

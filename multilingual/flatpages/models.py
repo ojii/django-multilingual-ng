@@ -1,4 +1,3 @@
-from django.core import validators
 from django.db import models
 from django.contrib.sites.models import Site
 import multilingual
@@ -7,7 +6,7 @@ from django.utils.translation import ugettext as _
 
 class MultilingualFlatPage(models.Model):
     # non-translatable fields first
-    url = models.CharField(_('URL'), max_length=100, validator_list=[validators.isAlphaNumericURL], db_index=True,
+    url = models.CharField(_('URL'), max_length=100, db_index=True,
         help_text=_("Example: '/about/contact/'. Make sure to have leading and trailing slashes."))
     enable_comments = models.BooleanField(_('enable comments'))
     template_name = models.CharField(_('template name'), max_length=70, blank=True,

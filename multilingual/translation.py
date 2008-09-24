@@ -12,7 +12,6 @@ from django.db.models.base import ModelBase
 from multilingual.languages import *
 from multilingual.exceptions import TranslationDoesNotExist
 from multilingual.fields import TranslationForeignKey
-from multilingual.manipulators import add_multilingual_manipulators
 from multilingual import manager
 
 from new import instancemethod
@@ -277,18 +276,14 @@ class Translation:
 
         trans_attrs = cls.__dict__.copy()
         trans_attrs['Meta'] = meta
-        trans_attrs['language_id'] = models.IntegerField(blank=False, null=False, core=True,
+        trans_attrs['language_id'] = models.IntegerField(blank=False, null=False,
                                                          choices=get_language_choices(),
                                                          db_index=True)
 
         edit_inline = True
 
         trans_attrs['master'] = TranslationForeignKey(main_cls, blank=False, null=False,
-                                                      edit_inline=edit_inline,
-                                                      related_name='translations',
-                                                      num_in_admin=get_language_count(),
-                                                      min_num_in_admin=get_language_count(),
-                                                      num_extra_on_change=0)
+                                                      related_name='translations',)
         trans_attrs['__str__'] = lambda self: ("%s object, language_code=%s"
                                                % (translation_model_name,
                                                   get_language_code(self.language_id)))
@@ -357,7 +352,7 @@ def install_translation_library():
                 attrs['objects'] = manager.Manager()
 
             # Install a hack to let add_multilingual_manipulators know
-            # this is a translatable model
+            # this is a translatable model (TODO: manipulators gone)
             attrs['is_translation_model'] = lambda self: True
 
         return _old_new(cls, name, bases, attrs)
