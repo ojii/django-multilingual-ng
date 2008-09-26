@@ -2,7 +2,7 @@
 Support for models' internal Translation class.
 """
 
-## TO DO: this is messy and needs to be cleaned up
+##TODO: this is messy and needs to be cleaned up
 
 from django.contrib.admin import StackedInline, ModelAdmin
 from django.core.exceptions import ObjectDoesNotExist
@@ -364,11 +364,12 @@ def install_translation_library():
     _old_admin_new = ModelAdmin.__new__
 
     def multilingual_modeladmin_new(cls, model, admin_site, obj=None):
+        #TODO: is this check really necessary?
         if isinstance(model.objects, manager.Manager):
             X = cls.get_translation_modeladmin(model)
             if cls.inlines:
                 for inline in cls.inlines:
-                    if X.__class__ == inline.__class__:
+                    if X.__name__ == inline.__name__:
                         cls.inlines.remove(inline)
                         break
                 cls.inlines.append(X)
