@@ -47,7 +47,7 @@ def get_language_id_from_id_or_code(language_id_or_code, use_default=True):
             return get_default_language()
         else:
             return None
-    
+
     if isinstance(language_id_or_code, int):
         return language_id_or_code
 
@@ -55,6 +55,8 @@ def get_language_id_from_id_or_code(language_id_or_code, use_default=True):
     for (code, desc) in LANGUAGES:
         i += 1
         if code == language_id_or_code:
+            return i
+        if language_id_or_code.startswith("%s-" % code):
             return i
     raise LanguageDoesNotExist(language_id_or_code)
 
@@ -92,7 +94,7 @@ def _to_db_identifier(name):
     alias in SQL.
 
     For the time being assume that the only possible problem with name
-    is the presence of dashes.    
+    is the presence of dashes.
     """
     return name.replace('-', '_')
 
