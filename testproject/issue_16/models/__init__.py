@@ -12,8 +12,6 @@ http://code.google.com/p/django-multilingual/issues/detail?id=16
 >>> c = Category.objects.get(id=c.id)
 >>> to_str(c.name)
 'The Name'
-
-
 """
 
 from issue_16.models.category import Category

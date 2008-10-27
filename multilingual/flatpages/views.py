@@ -50,4 +50,3 @@ def multilingual_flatpage(request, url):
     response = HttpResponse(t.render(c))
     populate_xheaders(request, response, MultilingualFlatPage, f.id)
     return response
-

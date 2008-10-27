@@ -115,4 +115,3 @@ def get_translated_field_alias(field_name, language_id=None):
     return ('_trans_'
             + field_name
             + '_' + _to_db_identifier(get_language_code(language_id)))
-

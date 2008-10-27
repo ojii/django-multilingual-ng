@@ -18,9 +18,7 @@ Models and unit tests for issues reported in the tracker.
 >>> set_default_language('en')
 >>> to_str(x.title)
 'The English Title'
-
 """
-
 
 from django.db import models
 import multilingual
@@ -30,9 +28,7 @@ except ImportError:
     pass
 
 class ModelWithCustomPK(models.Model):
-    
     custompk = models.CharField(max_length=5, primary_key=True)
-    
+
     class Translation(multilingual.Translation):
         title = models.CharField(_('Title'), max_length=50, unique = True)
-

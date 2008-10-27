@@ -13,9 +13,7 @@ class MultilingualFlatPage(models.Model):
         help_text=_("Example: 'flatpages/contact_page.html'. If this isn't provided, the system will use 'flatpages/default.html'."))
     registration_required = models.BooleanField(_('registration required'), help_text=_("If this is checked, only logged-in users will be able to view the page."))
     sites = models.ManyToManyField(Site)
-    
 
-    
     # And now the translatable fields
     class Translation(multilingual.Translation):
         """
@@ -32,7 +30,7 @@ class MultilingualFlatPage(models.Model):
         """
         title = models.CharField(_('title'), max_length=200)
         content = models.TextField(_('content'))
-    
+
     class Meta:
         db_table = 'multilingual_flatpage'
         verbose_name = _('multilingual flat page')
@@ -48,4 +46,3 @@ class MultilingualFlatPage(models.Model):
 
     def get_absolute_url(self):
         return self.url
-

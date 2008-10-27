@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <django-objects version="1.0">
-     <object pk="1" model="articles.categorytranslation">
+     <object pk="1" model="articles.category_language">
           <field type="CharField" name="name">Fixture category</field>
           <field type="TextField" name="description">Fixture category description</field>
           <field type="IntegerField" name="language_id">1</field>
           <field to="articles.category" name="master" rel="ManyToOneRel">1</field>
      </object>
-     <object pk="2" model="articles.categorytranslation">
+     <object pk="2" model="articles.category_language">
           <field type="CharField" name="name">Fixture kategoria</field>
           <field type="TextField" name="description">Fixture kategoria opis</field>
           <field type="IntegerField" name="language_id">2</field>

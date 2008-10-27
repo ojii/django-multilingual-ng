@@ -21,7 +21,6 @@ Models and unit tests for issues reported in the tracker.
 'Test polski'
 >>> to_str(g.title_en)
 'English Test'
-
 """
 
 from django.db import models

@@ -67,7 +67,5 @@ def do_edit_translation(parser, token):
     else:
         language = None
     return EditTranslationNode(bits[1], bits[2], language)
-        
+
 register.tag('edit_translation', do_edit_translation)
-
-

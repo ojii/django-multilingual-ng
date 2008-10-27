@@ -7,4 +7,3 @@ from multilingual.exceptions import TranslationDoesNotExist, LanguageDoesNotExis
 from multilingual.languages import set_default_language, get_default_language, get_language_code_list
 from multilingual.translation import Translation
 from multilingual.manager import Manager
-

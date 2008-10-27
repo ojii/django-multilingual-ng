@@ -13,4 +13,3 @@ class Manager(models.Manager):
 
     def get_query_set(self):
         return MultilingualModelQuerySet(self.model)
-

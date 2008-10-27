@@ -30,7 +30,6 @@ LANGUAGE_CODE = 'en'
 # It is important that the language identifiers are consecutive
 # numbers starting with 1.
 
-
 LANGUAGES = [['en', 'English'], # id=1
              ['pl', 'Polish'],  # id=2
              ['zh-cn', 'Simplified Chinese'], # id=3

@@ -25,13 +25,13 @@ def get_django_paths():
         'newforms': '/dev/django-newforms/',
         }
     """
-    
+
     if not os.path.exists(CONFIG_FILE_NAME):
         print "The %s file does not exist" % CONFIG_FILE_NAME
         open(CONFIG_FILE_NAME, 'w').write(DEFAULT_CONFIG_CONTENT)
         print ("I created the file, but you need to edit it to enter "
                "the correct paths.")
-    
+
         sys.exit(1)
     from multimanage_config import DJANGO_PATHS
     return DJANGO_PATHS

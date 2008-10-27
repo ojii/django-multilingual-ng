@@ -23,7 +23,6 @@ ERROR
 >>> 
 """
 
-
 from django.db import models
 import multilingual
 try:

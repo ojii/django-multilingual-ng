@@ -114,7 +114,7 @@ class MultilingualQuery(Query):
         opts = self.get_meta()
         alias = self.get_initial_alias()
         allow_many = trim or not negate
-        
+
         try:
             field, target, opts, join_list, last, extra_filters = self.setup_joins(
                     parts, opts, alias, True, allow_many, can_reuse=can_reuse,
@@ -526,4 +526,3 @@ class MultilingualModelQuerySet(QuerySet):
             return super(MultilingualModelQuerySet, self).extra(order_by=new_field_names)
         else:
             return super(MultilingualModelQuerySet, self).order_by(*field_names)
-

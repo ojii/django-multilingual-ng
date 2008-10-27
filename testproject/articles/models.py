@@ -208,7 +208,6 @@ Test models for the multilingual library.
 >>> c_n3 = Category.objects.create(name='nowa kategoria 2')
 >>> to_str((c_n3.name, c_n3.name_en, c_n3.name_pl))
 ('nowa kategoria 2', None, 'nowa kategoria 2')
-
 """
 
 from django.db import models
@@ -254,7 +253,7 @@ class Category(models.Model):
         description = models.TextField(verbose_name=_("The description"),
                                        blank=True, null=False)
 
-    	class Meta:
+        class Meta:
             db_table = 'category_language'
 
     def get_absolute_url(self):

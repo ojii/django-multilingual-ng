@@ -11,4 +11,3 @@ class MultilingualFlatPageAdmin(admin.ModelAdmin):
     search_fields = ('url', 'title')
 
 admin.site.register(MultilingualFlatPage, MultilingualFlatPageAdmin)
-
