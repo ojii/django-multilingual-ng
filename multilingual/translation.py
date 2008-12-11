@@ -366,6 +366,11 @@ def install_translation_library():
     def multilingual_modeladmin_new(cls, model, admin_site, obj=None):
         #TODO: is this check really necessary?
         if isinstance(model.objects, manager.Manager):
+            # Don't change ModelAdmin.inlines
+            # If our model is being registered with this base class,
+            # then subclass it before changing its inlines attribute
+            if cls is ModelAdmin:
+                cls =  type("%sAdmin" % model.__name__, (ModelAdmin,), {})
             X = cls.get_translation_modeladmin(model)
             if cls.inlines:
                 for inline in cls.inlines:
