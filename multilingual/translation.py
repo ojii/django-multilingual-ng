@@ -371,15 +371,20 @@ def install_translation_library():
             # then subclass it before changing its inlines attribute
             if cls is ModelAdmin:
                 cls =  type("%sAdmin" % model.__name__, (ModelAdmin,), {})
-            X = cls.get_translation_modeladmin(model)
-            if cls.inlines:
-                for inline in cls.inlines:
-                    if X.__name__ == inline.__name__:
-                        cls.inlines.remove(inline)
-                        break
-                cls.inlines.append(X)
-            else:
-                cls.inlines = [X]
+
+            # if the inlines already contain a class for the
+            # translation model, use it and don't create another one
+            translation_modeladmin = None
+            for inline in getattr(cls, 'inlines', []):
+                if inline.model == model._meta.translation_model:
+                    translation_modeladmin = inline
+
+            if not translation_modeladmin:
+                translation_modeladmin = cls.get_translation_modeladmin(model)
+                if cls.inlines:
+                    cls.inlines.insert(0, translation_modeladmin)
+                else:
+                    cls.inlines = [translation_modeladmin]
         return _old_admin_new(cls, model, admin_site, obj)
 
     def get_translation_modeladmin(cls, model):
