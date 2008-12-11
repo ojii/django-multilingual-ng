@@ -1,17 +1,7 @@
-from django.contrib.auth.models import User
-from django.test import TestCase
+from testproject.utils import AdminTestCase
 
-class TestIssue61(TestCase):
-    def setUp(self):
-        self.user = User.objects.get_or_create(username='admin',
-                                               email='admin@test.elksoft.pl')[0]
-        self.user.set_password('admin')
-        self.user.is_staff = True
-        self.user.is_superuser = True
-        self.user.save()
-        
+class TestIssue61(AdminTestCase):
     def test_the_issue(self):
-        self.client.login(username = 'admin', password = 'admin')
         resp = self.client.get('/admin/issue_61/othermodel/')
         self.assertEqual(resp.status_code, 200)
 
