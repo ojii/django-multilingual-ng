@@ -11,10 +11,9 @@ class ModelAdminClass(admin.ModelAdmin.__metaclass__):
     def __new__(cls, name, bases, attrs):
         # Move prepopulated_fields somewhere where Django won't see
         # them.  We have to handle them ourselves.
-        prepopulated_fields = attrs.get('prepopulated_fields')
-        if prepopulated_fields:
-            attrs['_dm_prepopulated_fields'] = prepopulated_fields
-            attrs['prepopulated_fields'] = {}
+        prepopulated_fields = attrs.get('prepopulated_fields', {})
+        attrs['prepopulated_fields'] = {}
+        attrs['_dm_prepopulated_fields'] = prepopulated_fields
         return super(ModelAdminClass, cls).__new__(cls, name, bases, attrs)
 
 class ModelAdmin(admin.ModelAdmin):

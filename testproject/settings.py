@@ -95,6 +95,7 @@ INSTALLED_APPS = (
     'multilingual',
     'multilingual.flatpages',
     'testproject.articles',
+    'testproject.inline_registrations',
     'testproject.issue_15',
     'testproject.issue_16',
     'testproject.issue_23',
