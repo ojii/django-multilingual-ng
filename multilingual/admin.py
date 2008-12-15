@@ -1,5 +1,6 @@
 from django.contrib import admin
 from multilingual.languages import *
+from multilingual.utils import is_multilingual_model
 
 class TranslationModelAdmin(admin.StackedInline):
     template = "admin/edit_inline_translations_newforms.html"
@@ -8,6 +9,10 @@ class TranslationModelAdmin(admin.StackedInline):
     max_num = get_language_count()
 
 class ModelAdminClass(admin.ModelAdmin.__metaclass__):
+    """
+    A metaclass for ModelAdmin below.
+    """
+    
     def __new__(cls, name, bases, attrs):
         # Move prepopulated_fields somewhere where Django won't see
         # them.  We have to handle them ourselves.
@@ -73,10 +78,6 @@ class ModelAdmin(admin.ModelAdmin):
         return super(ModelAdmin, self).render_change_form(request, context,
                                                           add, change, form_url, obj)
 
-
-def is_multilingual_model(model):
-    return hasattr(model._meta, 'translation_model')
-
 def get_translation_modeladmin(cls, model):
     if hasattr(cls, 'Translation'):
         tr_cls = cls.Translation
@@ -88,6 +89,9 @@ def get_translation_modeladmin(cls, model):
     tr_cls.model = model._meta.translation_model
     return tr_cls
 
+# TODO: multilingual_modeladmin_new should go away soon.  The code will
+# be split between the ModelAdmin class, its metaclass and validation
+# code.
 def multilingual_modeladmin_new(cls, model, admin_site, obj=None):
     if is_multilingual_model(model):
         if cls is admin.ModelAdmin:
@@ -103,8 +107,9 @@ def multilingual_modeladmin_new(cls, model, admin_site, obj=None):
 
         # make sure it subclasses multilingual.ModelAdmin
         if not issubclass(cls, ModelAdmin):
-            raise ValueError, ("%s must be registered with a subclass of "
-                               + " of multilingual.ModelAdmin.") % model
+            from warnings import warn
+            warn("%s should be registered with a subclass of "
+                 " of multilingual.ModelAdmin." % model, DeprecationWarning)
         
         # if the inlines already contain a class for the
         # translation model, use it and don't create another one
@@ -126,6 +131,6 @@ def install_multilingual_modeladmin_new():
     Override ModelAdmin.__new__ to create automatic inline
     editor for multilingual models.
     """
-    admin.ModelAdmin._original_new_before_dm = ModelAdmin.__new__
+    admin.ModelAdmin._original_new_before_dm = admin.ModelAdmin.__new__
     admin.ModelAdmin.__new__ = staticmethod(multilingual_modeladmin_new)
     

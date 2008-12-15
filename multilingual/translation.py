@@ -14,6 +14,11 @@ from multilingual.fields import TranslationForeignKey
 from multilingual import manager
 from multilingual.admin import install_multilingual_modeladmin_new
 
+# TODO: remove this import.  It is here only because earlier versions
+# of the library required importing TranslationModelAdmin from here
+# instead of taking it directly from multilingual
+from multilingual.admin import TranslationModelAdmin
+
 from new import instancemethod
 
 def translation_save_translated_fields(instance, **kwargs):

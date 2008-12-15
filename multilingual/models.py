@@ -15,3 +15,6 @@ multilingual.Translation to versions that do.
 
 from translation import install_translation_library
 install_translation_library()
+
+from validation import install_multilingual_admin_validation
+install_multilingual_admin_validation()
