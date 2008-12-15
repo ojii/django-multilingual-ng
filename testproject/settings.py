@@ -97,6 +97,7 @@ INSTALLED_APPS = (
     'testproject.articles',
     'testproject.issue_15',
     'testproject.issue_16',
+    'testproject.issue_23',
     'testproject.issue_29',
     'testproject.issue_37',
     'testproject.issue_61',

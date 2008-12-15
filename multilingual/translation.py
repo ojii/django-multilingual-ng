@@ -4,7 +4,6 @@ Support for models' internal Translation class.
 
 ##TODO: this is messy and needs to be cleaned up
 
-from django.contrib.admin import StackedInline, ModelAdmin
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import signals
@@ -13,11 +12,9 @@ from multilingual.languages import *
 from multilingual.exceptions import TranslationDoesNotExist
 from multilingual.fields import TranslationForeignKey
 from multilingual import manager
+from multilingual.admin import install_multilingual_modeladmin_new
 
 from new import instancemethod
-
-class TranslationModelAdmin(StackedInline):
-    template = "admin/edit_inline_translations_newforms.html"
 
 def translation_save_translated_fields(instance, **kwargs):
     """
@@ -359,50 +356,7 @@ def install_translation_library():
     ModelBase.__new__ = staticmethod(multilingual_modelbase_new)
     ModelBase._multilingual_installed = True
 
-    # Override ModelAdmin.__new__ to create automatic inline
-    # editor for multilingual models.
-    _old_admin_new = ModelAdmin.__new__
-
-    def multilingual_modeladmin_new(cls, model, admin_site, obj=None):
-        #TODO: is this check really necessary?
-        if isinstance(model.objects, manager.Manager):
-            # Don't change ModelAdmin.inlines
-            # If our model is being registered with this base class,
-            # then subclass it before changing its inlines attribute
-            if cls is ModelAdmin:
-                cls =  type("%sAdmin" % model.__name__, (ModelAdmin,), {})
-
-            # if the inlines already contain a class for the
-            # translation model, use it and don't create another one
-            translation_modeladmin = None
-            for inline in getattr(cls, 'inlines', []):
-                if inline.model == model._meta.translation_model:
-                    translation_modeladmin = inline
-
-            if not translation_modeladmin:
-                translation_modeladmin = cls.get_translation_modeladmin(model)
-                if cls.inlines:
-                    cls.inlines.insert(0, translation_modeladmin)
-                else:
-                    cls.inlines = [translation_modeladmin]
-        return _old_admin_new(cls, model, admin_site, obj)
-
-    def get_translation_modeladmin(cls, model):
-        if hasattr(cls, 'Translation'):
-            tr_cls = cls.Translation
-            if not issubclass(tr_cls, TranslationModelAdmin):
-                raise ValueError, ("%s.Translation must be a subclass "
-                                   + " of multilingual.TranslationModelAdmin.") % cls.name
-        else:
-            tr_cls = type("%s.Translation" % cls.__name__, (TranslationModelAdmin,), {})
-        tr_cls.model = model._meta.translation_model
-        tr_cls.fk_name = 'master'
-        tr_cls.extra = get_language_count()
-        tr_cls.max_num = get_language_count()
-        return tr_cls
-
-    ModelAdmin.__new__ = staticmethod(multilingual_modeladmin_new)
-    ModelAdmin.get_translation_modeladmin = classmethod(get_translation_modeladmin)
+    install_multilingual_modeladmin_new()
 
 # install the library
 install_translation_library()
