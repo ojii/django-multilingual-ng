@@ -305,6 +305,7 @@ class Translation:
                                                       main_cls._meta.__class__)
 
         main_cls._meta.translation_model = trans_model
+        main_cls.Translation = trans_model
         main_cls.get_translation = get_translation
         main_cls.fill_translation_cache = fill_translation_cache
 
