@@ -16,6 +16,18 @@ from django.db.models.sql.datastructures import EmptyResultSet, Empty, MultiJoin
 from django.db.models.sql.constants import *
 from django.db.models.sql.where import WhereNode, EverythingNode, AND, OR
 
+try:
+    # handle internal API changes in Django rev. 9700
+    from django.db.models.sql.where import Constraint
+
+    def constraint_tuple(alias, col, field, lookup_type, value):
+        return (Constraint(alias, col, field), lookup_type, value)
+
+except ImportError:
+    # backwards compatibility, for Django versions 1.0 to rev. 9699
+    def constraint_tuple(alias, col, field, lookup_type, value):
+        return (alias, col, field, lookup_type, value)
+
 from multilingual.languages import (get_translation_table_alias, get_language_id_list,
                                     get_default_language, get_translated_field_alias,
                                     get_language_id_from_id_or_code)
@@ -140,7 +152,7 @@ class MultilingualQuery(Query):
                     trans_table_alias = get_translation_table_alias(
                         model._meta.db_table, language_id)
                     new_table = (master_table_name + "__" + trans_table_alias)
-                    self.where.add((new_table, field.column, field, lookup_type, value), connector)
+                    self.where.add(constraint_tuple(new_table, field.column, field, lookup_type, value), connector)
                     return
 
         final = len(join_list)
@@ -206,7 +218,7 @@ class MultilingualQuery(Query):
             self.promote_alias_chain(join_it, join_promote)
             self.promote_alias_chain(table_it, table_promote)
 
-        self.where.add((alias, col, field, lookup_type, value), connector)
+        self.where.add(constraint_tuple(alias, col, field, lookup_type, value), connector)
 
         if negate:
             self.promote_alias_chain(join_list)
@@ -216,7 +228,7 @@ class MultilingualQuery(Query):
                         if self.alias_map[alias][JOIN_TYPE] == self.LOUTER:
                             j_col = self.alias_map[alias][RHS_JOIN_COL]
                             entry = self.where_class()
-                            entry.add((alias, j_col, None, 'isnull', True), AND)
+                            entry.add(constraint_tuple(alias, j_col, None, 'isnull', True), AND)
                             entry.negate()
                             self.where.add(entry, AND)
                             break
@@ -225,7 +237,7 @@ class MultilingualQuery(Query):
                     # exclude the "foo__in=[]" case from this handling, because
                     # it's short-circuited in the Where class.
                     entry = self.where_class()
-                    entry.add((alias, col, None, 'isnull', True), AND)
+                    entry.add(constraint_tuple(alias, col, None, 'isnull', True), AND)
                     entry.negate()
                     self.where.add(entry, AND)
 
