@@ -12,7 +12,7 @@ from django.db import connection
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.query import QuerySet, Q
 from django.db.models.sql.query import Query
-from django.db.models.sql.datastructures import Count, EmptyResultSet, Empty, MultiJoin
+from django.db.models.sql.datastructures import EmptyResultSet, Empty, MultiJoin
 from django.db.models.sql.constants import *
 from django.db.models.sql.where import WhereNode, EverythingNode, AND, OR
 
