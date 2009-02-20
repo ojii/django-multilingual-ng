@@ -37,6 +37,7 @@ __ALL__ = ['MultilingualModelQuerySet']
 class MultilingualQuery(Query):
     def __init__(self, model, connection, where=WhereNode):
         self.extra_join = {}
+        self.include_translation_data = True
         extra_select = {}
         super(MultilingualQuery, self).__init__(model, connection, where=where)
         opts = self.model._meta
@@ -55,16 +56,24 @@ class MultilingualQuery(Query):
                         language_id)
                     extra_select[field_alias] = qn2(table_alias) + '.' + qn2(fname)
             self.add_extra(extra_select, None,None,None,None,None)
+            self._trans_extra_select_count = len(self.extra_select)
 
     def clone(self, klass=None, **kwargs):
-        obj = super(MultilingualQuery, self).clone(klass=klass, **kwargs)
-        obj.extra_join = self.extra_join
-        return obj
+        defaults = {
+            'extra_join': self.extra_join,
+            'include_translation_data': self.include_translation_data,
+            }
+        defaults.update(kwargs)
+        return super(MultilingualQuery, self).clone(klass=klass, **defaults)
 
     def pre_sql_setup(self):
         """Adds the JOINS and SELECTS for fetching multilingual data.
         """
         super(MultilingualQuery, self).pre_sql_setup()
+
+        if not self.include_translation_data:
+            return
+        
         opts = self.model._meta
         qn = self.quote_name_unless_alias
         qn2 = self.connection.ops.quote_name
@@ -89,6 +98,10 @@ class MultilingualQuery(Query):
         """Add the JOINS for related multilingual fields filtering.
         """
         result = super(MultilingualQuery, self).get_from_clause()
+
+        if not self.include_translation_data:
+            return result
+        
         from_ = result[0]
         for join in self.extra_join.values():
             from_.append(join)
@@ -474,9 +487,28 @@ class MultilingualQuery(Query):
     def setup_joins(self, names, opts, alias, dupe_multis, allow_many=True,
             allow_explicit_fk=False, can_reuse=None, negate=False,
             process_extras=True):
-        return self._setup_joins_with_translation(names, opts, alias, dupe_multis,
-                                                  allow_many, allow_explicit_fk,
-                                                  can_reuse, negate, process_extras)
+        if not self.include_translation_data:
+            return super(MultilingualQuery, self).setup_joins(names, opts, alias,
+                                                              dupe_multis, allow_many,
+                                                              allow_explicit_fk,
+                                                              can_reuse, negate,
+                                                              process_extras)
+        else:
+            return self._setup_joins_with_translation(names, opts, alias, dupe_multis,
+                                                      allow_many, allow_explicit_fk,
+                                                      can_reuse, negate, process_extras)
+
+    def get_count(self):
+        # optimize for the common special case: count without any
+        # filters
+        if ((not (self.select or self.where or self.extra_where))
+            and self.include_translation_data):
+            obj = self.clone(extra_select = {},
+                             extra_join = {},
+                             include_translation_data = False)
+            return obj.get_count()
+        else:
+            return super(MultilingualQuery, self).get_count()
 
 class MultilingualModelQuerySet(QuerySet):
     """
