@@ -110,3 +110,21 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.i18n',
     'multilingual.context_processors.multilingual',
 )
+
+try:
+    # install the debug toolbar if available
+    import debug_toolbar
+
+    MIDDLEWARE_CLASSES = (
+        'debug_toolbar.middleware.DebugToolbarMiddleware',
+        ) + MIDDLEWARE_CLASSES
+    INSTALLED_APPS += ('debug_toolbar',)
+
+    INTERNAL_IPS = ('127.0.0.1',)
+
+    DEBUG_TOOLBAR_CONFIG = {
+        'INTERCEPT_REDIRECTS': False
+        }
+
+except ImportError:
+    pass
