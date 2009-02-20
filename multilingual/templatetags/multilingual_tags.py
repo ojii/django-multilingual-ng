@@ -4,7 +4,8 @@ from django.template import Node, NodeList, Template, Context, resolve_variable
 from django.template.loader import get_template, render_to_string
 from django.conf import settings
 from django.utils.html import escape
-from multilingual.languages import get_language_idx, get_default_language
+from multilingual.languages import (get_language_idx, get_default_language,
+                                    get_language_id_list)
 import math
 import StringIO
 import tokenize
@@ -69,3 +70,15 @@ def do_edit_translation(parser, token):
     return EditTranslationNode(bits[1], bits[2], language)
 
 register.tag('edit_translation', do_edit_translation)
+
+def reorder_translation_formset_by_language_id(inline_admin_form):
+    """
+    Shuffle the forms in the formset of multilingual model in the
+    order of their language_ids.
+    """
+    lang_to_form = dict([(form.form.initial['language_id'], form)
+                         for form in inline_admin_form])
+    return [lang_to_form[language_id] for language_id in get_language_id_list()]
+    
+register.filter(reorder_translation_formset_by_language_id)
+

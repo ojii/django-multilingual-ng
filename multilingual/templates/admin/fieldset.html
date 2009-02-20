@@ -11,10 +11,10 @@
           {% if field.is_checkbox %}
               {{ field.field }}{{ field.label_tag }}
           {% else %}
-          	  {% ifequal field.field.name "language_id" %}
+              {% ifequal field.field.name "language_id" %}
                   <input type="hidden" name="{{ field.field.html_name }}" 
-                  		 value="{{ forloop.parentloop.parentloop.parentloop.counter }}" />
-          	  {% else %}
+                         value="{{ forloop.parentloop.parentloop.parentloop.counter }}" />
+              {% else %}
                   {{ field.label_tag }}
                   {% if forloop.parentloop.parentloop.parentloop.counter|language_bidi %}
                      <span style="direction: rtl; text-align: right;">{{ field.field }}</span>

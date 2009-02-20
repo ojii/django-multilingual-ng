@@ -208,6 +208,44 @@ Test models for the multilingual library.
 >>> c_n3 = Category.objects.create(name='nowa kategoria 2')
 >>> to_str((c_n3.name, c_n3.name_en, c_n3.name_pl))
 ('nowa kategoria 2', None, 'nowa kategoria 2')
+
+########################################
+###### Check if the admin behaviour for categories with incomplete translations
+
+>>> from django.contrib.auth.models import User
+>>> User.objects.create_superuser('test', 'test_email', 'test_password')
+
+>>> from django.test.client import Client
+>>> c = Client()
+>>> c.login(username='test', password='test_password')
+True
+
+# create a category with only 2 translations, skipping the
+# first language
+>>> resp = c.post('/admin/articles/category/add/',
+...        {'creator': 1,
+...         'translations-TOTAL_FORMS': '3',
+...         'translations-INITIAL_FORMS': '0',
+...         'translations-0-language_id': '1',
+...         'translations-1-language_id': '2',
+...         'translations-2-language_id': '3',
+...         'translations-1-name': 'pl name',
+...         'translations-2-name': 'zh-cn name',
+...        })
+
+>>> resp.status_code
+302
+
+>>> cat = Category.objects.order_by('-id')[0]
+>>> cat.name_en
+
+>>> cat.name_pl
+u'pl name'
+>>> cat.name_zh_cn
+u'zh-cn name'
+
+>>> cat.translations.count()
+2
 """
 
 from django.db import models
@@ -285,7 +323,7 @@ class Article(models.Model):
 
     # non-translatable fields first
     creator = models.ForeignKey(User, verbose_name=_("Created by"),
-                                blank=True, null=True)
+                                blank=False, null=True)
     created = models.DateTimeField(verbose_name=_("Created at"),
                                    auto_now_add=True)
     category = models.ForeignKey(Category, verbose_name=_("Parent category"),

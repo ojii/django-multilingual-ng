@@ -1,12 +1,80 @@
 from django.contrib import admin
+from django.forms.models import BaseInlineFormSet
+from django.forms.fields import BooleanField
+from django.forms.formsets import DELETION_FIELD_NAME
+from django.forms.util import ErrorDict
+from django.utils.translation import ugettext as _
+
 from multilingual.languages import *
 from multilingual.utils import is_multilingual_model
+
+def _translation_form_full_clean(self, previous_full_clean):
+    """
+    There is a bug in Django that causes inline forms to be
+    validated even if they are marked for deletion.
+
+    This function fixes that by disabling validation
+    completely if the delete field is marked and only copying
+    the absolutely required fields: PK and FK to parent.
+
+    TODO: create a fix for Django, have it accepted into trunk and get
+    rid of this monkey patch.
+    
+    """
+
+    def cleaned_value(name):
+        field = self.fields[name]
+        val = field.widget.value_from_datadict(self.data, self.files,
+                                               self.add_prefix(name))
+        return field.clean(val)
+
+    delete = cleaned_value(DELETION_FIELD_NAME)
+
+    if delete:
+        # this object is to be skipped or deleted, so only
+        # construct the minimal cleaned_data
+        self.cleaned_data = {'DELETE': delete,
+                             'id': cleaned_value('id'),
+                             'master': cleaned_value('master')}
+        self._errors = ErrorDict()
+    else:
+        return previous_full_clean()
+
+class TranslationInlineFormSet(BaseInlineFormSet):
+
+    def _construct_forms(self):
+        ## set the right default values for language_ids of empty (new) forms
+        super(TranslationInlineFormSet, self)._construct_forms()
+        
+        empty_forms = []
+        lang_id_list = get_language_id_list()
+        lang_to_form = dict(zip(lang_id_list, [None] * len(lang_id_list)))
+
+        for form in self.forms:
+            language_id = form.initial.get('language_id')
+            if language_id:
+                lang_to_form[language_id] = form
+            else:
+                empty_forms.append(form)
+
+        for language_id in lang_id_list:
+            form = lang_to_form[language_id]
+            if form is None:
+                form = empty_forms.pop(0)
+                form.initial['language_id'] = language_id
+    
+    def add_fields(self, form, index):
+        super(TranslationInlineFormSet, self).add_fields(form, index)
+
+        previous_full_clean = form.full_clean
+        form.full_clean = lambda: _translation_form_full_clean(form, previous_full_clean)
 
 class TranslationModelAdmin(admin.StackedInline):
     template = "admin/edit_inline_translations_newforms.html"
     fk_name = 'master'
     extra = get_language_count()
     max_num = get_language_count()
+    formset = TranslationInlineFormSet
 
 class ModelAdminClass(admin.ModelAdmin.__metaclass__):
     """
