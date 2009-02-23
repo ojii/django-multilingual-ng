@@ -29,7 +29,7 @@ class MultilingualFlatPage(models.Model):
          * title and content properties using the methods above
         """
         title = models.CharField(_('title'), max_length=200)
-        content = models.TextField(_('content'))
+        content = models.TextField(_('content'), blank=True)
 
     class Meta:
         db_table = 'multilingual_flatpage'
