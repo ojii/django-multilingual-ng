@@ -78,17 +78,20 @@ def fill_translation_cache(instance):
             instance._translation_cache[translation.language_id] = translation
 
 class TranslatedFieldProxy(property):
-    def __init__(self, field_name, alias, field, language_id=None):
+    def __init__(self, field_name, alias, field, language_id=None,
+                 fallback=False):
         self.field_name = field_name
         self.field = field
         self.admin_order_field = alias
         self.language_id = language_id
+        self.fallback = fallback
 
     def __get__(self, obj, objtype=None):
         if obj is None:
             return self
 
-        return getattr(obj, 'get_' + self.field_name)(self.language_id)
+        return getattr(obj, 'get_' + self.field_name)(self.language_id,
+                                                      self.fallback)
 
     def __set__(self, obj, value):
         language_id = self.language_id
@@ -101,9 +104,11 @@ def getter_generator(field_name, short_description):
     """
     Generate get_'field name' method for field field_name.
     """
-    def get_translation_field(self, language_id_or_code=None):
+    def get_translation_field(self, language_id_or_code=None, fallback=False):
         try:
-            return getattr(self.get_translation(language_id_or_code), field_name)
+            return getattr(self.get_translation(language_id_or_code,
+                                                fallback=fallback),
+                           field_name)
         except TranslationDoesNotExist:
             return None
     get_translation_field.short_description = short_description
@@ -120,13 +125,18 @@ def setter_generator(field_name):
     return set_translation_field
 
 def get_translation(self, language_id_or_code,
-                    create_if_necessary=False):
+                    create_if_necessary=False,
+                    fallback=False):
     """
-    Get a translation instance for the given language_id_or_code.
+    Get a translation instance for the given `language_id_or_code`.
 
-    If it does not exist, either create one or raise the
-    TranslationDoesNotExist exception, depending on the
-    create_if_necessary argument.
+    If the translation does not exist:
+
+    1. if `create_if_necessary` is True, this function will create one
+    2. otherwise, if `fallback` is True, this function will search the
+       list of languages looking for the first existing translation
+    3. if all of the above fails to find a translation, raise the
+    TranslationDoesNotExist exception
     """
 
     # fill the cache if necessary
@@ -138,13 +148,24 @@ def get_translation(self, language_id_or_code,
     if language_id is None:
         language_id = get_default_language()
 
-    if language_id not in self._translation_cache:
-        if not create_if_necessary:
-            raise TranslationDoesNotExist(language_id)
+    if language_id in self._translation_cache:
+        return self._translation_cache.get(language_id, None)
+
+    if create_if_necessary:
+        # case 1
         new_translation = self._meta.translation_model(master=self,
                                                        language_id=language_id)
         self._translation_cache[language_id] = new_translation
-    return self._translation_cache.get(language_id, None)
+        return new_translation
+    elif fallback:
+        # case 2
+        for fb_lang_id in FALLBACK_LANGUAGE_IDS:
+            trans = self._translation_cache.get(fb_lang_id, None)
+            if trans:
+                return trans
+    else:
+        # case 3
+        raise TranslationDoesNotExist(language_id)
 
 class Translation:
     """
@@ -196,6 +217,10 @@ class Translation:
                 setattr(main_cls, fname,
                         TranslatedFieldProxy(fname, fname, field))
 
+                # add the 'fname'_any fallback
+                setattr(main_cls, fname + FALLBACK_FIELD_SUFFIX,
+                        TranslatedFieldProxy(fname, fname, field, fallback=True))
+
                 # create the 'fname'_'language_code' proxy properties
                 for language_id in get_language_id_list():
                     language_code = get_language_code(language_id)
@@ -204,6 +229,11 @@ class Translation:
                     setattr(main_cls, fname_lng,
                             TranslatedFieldProxy(fname, fname_lng, field,
                                                  language_id))
+                    # add the 'fname'_'language_code'_any fallback proxy
+                    setattr(main_cls, fname_lng + FALLBACK_FIELD_SUFFIX,
+                            TranslatedFieldProxy(fname, fname_lng, field,
+                                                 language_id, fallback=True))
+
         return translated_fields
     create_translation_attrs = classmethod(create_translation_attrs)
 

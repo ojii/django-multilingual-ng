@@ -9,6 +9,11 @@ Django-multilingual: language-related settings and functions.
 from django.conf import settings
 LANGUAGES = settings.LANGUAGES
 
+try:
+    FALLBACK_LANGUAGES = settings.MULTILINGUAL_FALLBACK_LANGUAGES
+except AttributeError:
+    FALLBACK_LANGUAGES = [lang[0] for lang in settings.LANGUAGES]
+
 from django.utils.translation import ugettext_lazy as _
 from multilingual.exceptions import LanguageDoesNotExist
 
@@ -115,3 +120,8 @@ def get_translated_field_alias(field_name, language_id=None):
     return ('_trans_'
             + field_name
             + '_' + _to_db_identifier(get_language_code(language_id)))
+
+FALLBACK_LANGUAGE_IDS = [get_language_idx(lang_code) for lang_code in FALLBACK_LANGUAGES]
+
+FALLBACK_FIELD_SUFFIX = '_any'
+

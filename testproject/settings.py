@@ -95,6 +95,7 @@ INSTALLED_APPS = (
     'multilingual',
     'multilingual.flatpages',
     'testproject.articles',
+    'testproject.fallback',
     'testproject.inline_registrations',
     'testproject.issue_15',
     'testproject.issue_16',
@@ -110,6 +111,8 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.i18n',
     'multilingual.context_processors.multilingual',
 )
+
+MULTILINGUAL_FALLBACK_LANGUAGES = ['pl', 'zh-cn']
 
 try:
     # install the debug toolbar if available
