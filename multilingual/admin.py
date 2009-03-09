@@ -34,8 +34,7 @@ def _translation_form_full_clean(self, previous_full_clean):
         # this object is to be skipped or deleted, so only
         # construct the minimal cleaned_data
         self.cleaned_data = {'DELETE': delete,
-                             'id': cleaned_value('id'),
-                             'master': cleaned_value('master')}
+                             'id': cleaned_value('id')}
         self._errors = ErrorDict()
     else:
         return previous_full_clean()
