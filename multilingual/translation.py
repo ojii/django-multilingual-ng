@@ -37,25 +37,6 @@ def translation_save_translated_fields(instance, **kwargs):
         translation.master_id = instance._get_pk_val()
         translation.save()
 
-def translation_overwrite_previous(instance, **kwargs):
-    """
-    Delete previously existing translation with the same master and
-    language_id values.  To be called by translation model's pre_save
-    signal.
-
-    This most probably means I am abusing something here trying to use
-    Django inline editor.  Oh well, it will have to go anyway when we
-    move to newforms.
-    """
-    qs = instance.__class__.objects
-    try:
-        qs = qs.filter(master=instance.master).filter(language_id=instance.language_id)
-        qs.delete()
-    except ObjectDoesNotExist:
-        # We are probably loading a fixture that defines translation entities
-        # before their master entity.
-        pass
-
 def fill_translation_cache(instance):
     """
     Fill the translation cache using information received in the
@@ -315,11 +296,6 @@ class Translation:
 #        signals.post_init.connect(fill_translation_cache,
 #                sender=main_cls)
 
-        # connect the pre_save signal on translation class to a
-        # function removing previous translation entries.
-        signals.pre_save.connect(translation_overwrite_previous,
-                sender=trans_model, weak=False)
-
     finish_multilingual_class = classmethod(finish_multilingual_class)
 
 def install_translation_library():
@@ -353,10 +329,6 @@ def install_translation_library():
             # Change the default manager to multilingual.Manager.
             if not 'objects' in attrs:
                 attrs['objects'] = manager.Manager()
-
-            # Install a hack to let add_multilingual_manipulators know
-            # this is a translatable model (TODO: manipulators gone)
-            attrs['is_translation_model'] = lambda self: True
 
         return _old_new(cls, name, bases, attrs)
     ModelBase.__new__ = staticmethod(multilingual_modelbase_new)
