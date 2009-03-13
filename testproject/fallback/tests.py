@@ -30,7 +30,7 @@ class FallbackTestCase(TestCase):
         
         # fallback should not fail if instance has no translations
         c = Comment.objects.get(username='theuser')
-        c.body
+        self.assertTrue(c.body_any is None)
 
         # the tests
         a = Article.objects.get(title_zh_cn='zh-cn title 1')
