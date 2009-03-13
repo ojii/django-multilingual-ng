@@ -112,7 +112,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'multilingual.context_processors.multilingual',
 )
 
-MULTILINGUAL_FALLBACK_LANGUAGES = ['pl', 'zh-cn']
+MULTILINGUAL_FALLBACK_LANGUAGES = ['zh-cn', 'pl']
 
 try:
     # install the debug toolbar if available
