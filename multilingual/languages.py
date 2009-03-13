@@ -121,7 +121,7 @@ def get_translated_field_alias(field_name, language_id=None):
             + field_name
             + '_' + _to_db_identifier(get_language_code(language_id)))
 
-FALLBACK_LANGUAGE_IDS = [get_language_idx(lang_code) for lang_code in FALLBACK_LANGUAGES]
+FALLBACK_LANGUAGE_IDS = [get_language_id_from_id_or_code(lang_code) for lang_code in FALLBACK_LANGUAGES]
 
 FALLBACK_FIELD_SUFFIX = '_any'
 
