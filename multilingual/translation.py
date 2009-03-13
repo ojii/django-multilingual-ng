@@ -163,6 +163,7 @@ def get_translation(self, language_id_or_code,
             trans = self._translation_cache.get(fb_lang_id, None)
             if trans:
                 return trans
+        raise TranslationDoesNotExist(language_id)
     else:
         # case 3
         raise TranslationDoesNotExist(language_id)
