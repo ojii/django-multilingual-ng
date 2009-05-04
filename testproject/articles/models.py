@@ -213,7 +213,7 @@ Test models for the multilingual library.
 ###### Check if the admin behaviour for categories with incomplete translations
 
 >>> from django.contrib.auth.models import User
->>> User.objects.create_superuser('test', 'test_email', 'test_password')
+>>> User.objects.create_superuser('test', 'test_email', 'test_password') and None
 
 >>> from django.test.client import Client
 >>> c = Client()
