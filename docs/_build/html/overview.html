@@ -1,0 +1,204 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Django Multilingual &mdash; Django Multilingual v0.2 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.2',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Django Multilingual v0.2 documentation" href="index.html" />
+    <link rel="next" title="Add middleware to set the default language" href="middleware.html" />
+    <link rel="prev" title="Welcome to Django Multilingual’s documentation!" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="middleware.html" title="Add middleware to set the default language"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to Django Multilingual’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Django Multilingual v0.2 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="django-multilingual">
+<h1>Django Multilingual<a class="headerlink" href="#django-multilingual" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
+<p>After following the instructions over at <tt class="docutils literal"><span class="pre">INSTALL</span></tt>, we need to configure our
+app&#8217;s <tt class="docutils literal"><span class="pre">settings.py</span></tt> file.</p>
+<ul>
+<li><p class="first">Add <tt class="docutils literal"><span class="pre">LANGUAGES</span></tt> setting this is the same setting that is used by Django&#8217;s
+i18n:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">LANGUAGES</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="p">(</span><span class="s">&#39;en&#39;</span><span class="p">,</span> <span class="s">&#39;English&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s">&#39;pl&#39;</span><span class="p">,</span> <span class="s">&#39;Polish&#39;</span><span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Add <tt class="docutils literal"><span class="pre">DEFAULT_LANGUAGE</span></tt>, in this example setting it to 1 would make the
+default English as it is first in the <tt class="docutils literal"><span class="pre">LANGUAGES</span></tt> list:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">DEFAULT_LANGUAGE</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Add multilingual.context_processors.multilingual to <tt class="docutils literal"><span class="pre">TEMPLATE_CONTEXT_PROCESSORS</span></tt>,
+it should look something like this:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">TEMPLATE_CONTEXT_PROCESSORS</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s">&#39;django.core.context_processors.auth&#39;</span><span class="p">,</span>
+    <span class="s">&#39;django.core.context_processors.debug&#39;</span><span class="p">,</span>
+    <span class="s">&#39;django.core.context_processors.i18n&#39;</span><span class="p">,</span>
+    <span class="s">&#39;multilingual.context_processors.multilingual&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Add multilingual to <tt class="docutils literal"><span class="pre">INSTALLED_APPS</span></tt>, it should look like this:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">INSTALLED_APPS</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s">&#39;django.contrib.auth&#39;</span><span class="p">,</span>
+    <span class="s">&#39;django.contrib.contenttypes&#39;</span><span class="p">,</span>
+    <span class="s">&#39;django.contrib.sessions&#39;</span><span class="p">,</span>
+    <span class="s">&#39;django.contrib.sites&#39;</span><span class="p">,</span>
+    <span class="s">&#39;django.contrib.admin&#39;</span><span class="p">,</span>
+    <span class="s">&#39;multilingual&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+<div class="section" id="model-setup">
+<h2>Model Setup<a class="headerlink" href="#model-setup" title="Permalink to this headline">¶</a></h2>
+<p>Once this is done, we need to setup our Model.</p>
+<ul>
+<li><p class="first">At the top of the model file import multilingual:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">multilingual</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Create the model, the sub-class translation contains all the fields that
+will have multiple language data. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Category</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="n">parent</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">ForeignKey</span><span class="p">(</span><span class="s">&#39;self&#39;</span><span class="p">,</span> <span class="n">blank</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">null</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="k">class</span> <span class="nc">Translation</span><span class="p">(</span><span class="n">multilingual</span><span class="o">.</span><span class="n">Translation</span><span class="p">):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">250</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__unicode__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+<div class="section" id="meta-class">
+<h2><tt class="docutils literal"><span class="pre">Meta</span></tt> Class<a class="headerlink" href="#meta-class" title="Permalink to this headline">¶</a></h2>
+<p>You may also add a <tt class="docutils literal"><span class="pre">Meta</span></tt> inner class to the <tt class="docutils literal"><span class="pre">Translation</span></tt> class to
+configure the translation mechanism. Currently, the only properties
+recognized is:</p>
+<div class="highlight-python"><pre>db_table sets the database table name (default: &lt;model&gt;_translation)</pre>
+</div>
+<p>An example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Dog</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="n">owner</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">ForeignKey</span><span class="p">(</span><span class="n">Human</span><span class="p">)</span>
+
+    <span class="k">class</span> <span class="nc">Translation</span><span class="p">(</span><span class="n">multilingual</span><span class="o">.</span><span class="n">Translation</span><span class="p">):</span>
+        <span class="n">breed</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+
+        <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+            <span class="n">db_table</span> <span class="o">=</span> <span class="s">&#39;dog_languages_table&#39;</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference external" href="">Django Multilingual</a><ul>
+<li><a class="reference external" href="#configuration">Configuration</a></li>
+<li><a class="reference external" href="#model-setup">Model Setup</a></li>
+<li><a class="reference external" href="#meta-class"><tt class="docutils literal"><span class="pre">Meta</span></tt> Class</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="index.html"
+                                  title="previous chapter">Welcome to Django Multilingual&#8217;s documentation!</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="middleware.html"
+                                  title="next chapter">Add middleware to set the default language</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/overview.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="middleware.html" title="Add middleware to set the default language"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to Django Multilingual’s documentation!"
+             >previous</a> |</li>
+        <li><a href="index.html">Django Multilingual v0.2 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2009, Marcin Kaszynski.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.3.
+    </div>
+  </body>
+</html>
