@@ -1,0 +1,12 @@
+Thanks for downloading django-multilingual.
+
+To install it, checkout from Subversion:
+
+    svn co http://django-multilingual.googlecode.com/svn/trunk/ multilingual
+
+and add the included ``multilingual`` directory to your PYTHONPATH, or symlink
+to it from somewhere on your PYTHONPATH.
+
+Note that this application requires Python 2.3 or later, and Django 1.0 or 1.1. You
+can obtain Python from http://www.python.org/ and Django from
+http://www.djangoproject.com/.

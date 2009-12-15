@@ -1,0 +1,10 @@
+===================
+Django Multilingual
+===================
+
+This is a library providing support for multilingual content in Django models. 
+
+For installation instructions, see the file "INSTALL" in this directory; for
+instructions on how to use this application, and on what it provides, see the
+file "overview.rst" in the "docs/" directory or browse the whole documentation
+already available in "docs/_build/html".
