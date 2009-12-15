@@ -1,13 +1,12 @@
 from django.db import models
 from django.contrib.sites.models import Site
+from django.utils.translation import ugettext_lazy as _
 import multilingual
 
-from django.utils.translation import ugettext as _
 
 class MultilingualFlatPage(models.Model):
     # non-translatable fields first
-    url = models.CharField(_('URL'), max_length=100, db_index=True,
-        help_text=_("Example: '/about/contact/'. Make sure to have leading and trailing slashes."))
+    url = models.CharField(_('URL'), max_length=100, db_index=True)
     enable_comments = models.BooleanField(_('enable comments'))
     template_name = models.CharField(_('template name'), max_length=70, blank=True,
         help_text=_("Example: 'flatpages/contact_page.html'. If this isn't provided, the system will use 'flatpages/default.html'."))
@@ -21,7 +20,7 @@ class MultilingualFlatPage(models.Model):
 
         The multilingual machinery will automatically add these to the
         Category class:
-        
+
          * get_title(language_id=None)
          * set_title(value, language_id=None)
          * get_content(language_id=None)

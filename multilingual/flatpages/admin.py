@@ -1,14 +1,29 @@
+from django import forms
 from django.contrib import admin
-from django.utils.translation import ugettext_lazy as _
 from multilingual.flatpages.models import MultilingualFlatPage
+from django.utils.translation import ugettext_lazy as _
 import multilingual
 
+
+class MultilingualFlatpageForm(forms.ModelForm):
+    url = forms.RegexField(label=_("URL"), max_length=100, regex=r'^[-\w/]+$',
+        help_text = _("Example: '/about/contact/'. Make sure to have leading"
+                      " and trailing slashes."),
+        error_message = _("This value must contain only letters, numbers,"
+                          " underscores, dashes or slashes."))
+
+    class Meta:
+        model = MultilingualFlatPage
+
+
 class MultilingualFlatPageAdmin(multilingual.ModelAdmin):
+    form = MultilingualFlatpageForm
     fieldsets = (
         (None, {'fields': ('url', 'sites')}),
         (_('Advanced options'), {'classes': ('collapse',), 'fields': ('enable_comments', 'registration_required', 'template_name')}),
     )
-    list_filter = ('sites',)
+    list_display = ('url', 'title')
+    list_filter = ('sites', 'enable_comments', 'registration_required')
     search_fields = ('url', 'title')
 
 admin.site.register(MultilingualFlatPage, MultilingualFlatPageAdmin)

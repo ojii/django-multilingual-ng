@@ -1,13 +1,12 @@
 from multilingual.flatpages.models import MultilingualFlatPage
 from django.template import loader, RequestContext
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.conf import settings
 from django.core.xheaders import populate_xheaders
+from django.utils.safestring import mark_safe
 from django.utils.translation import get_language
 import multilingual
-
-from django.utils.safestring import mark_safe
 
 DEFAULT_TEMPLATE = 'flatpages/default.html'
 
@@ -22,6 +21,8 @@ def multilingual_flatpage(request, url):
         flatpage
             `flatpages.flatpages` object
     """
+    if not url.endswith('/') and settings.APPEND_SLASH:
+        return HttpResponseRedirect("%s/" % request.path)
     if not url.startswith('/'):
         url = "/" + url
     f = get_object_or_404(MultilingualFlatPage, url__exact=url, sites__id__exact=settings.SITE_ID)
@@ -30,8 +31,8 @@ def multilingual_flatpage(request, url):
     if f.registration_required and not request.user.is_authenticated():
         from django.contrib.auth.views import redirect_to_login
         return redirect_to_login(request.path)
-    #Serve the content in the language defined by the Django translation module
-    #if possible else serve the default language    
+    # Serve the content in the language defined by the Django translation module
+    # if possible else serve the default language.
     f._default_language = multilingual.languages.get_language_id_from_id_or_code(get_language())
     if f.template_name:
         t = loader.select_template((f.template_name, DEFAULT_TEMPLATE))
