@@ -188,7 +188,7 @@ def multilingual_modeladmin_new(cls, model, admin_site, obj=None):
         if not translation_modeladmin:
             translation_modeladmin = get_translation_modeladmin(cls, model)
             if cls.inlines:
-                cls.inlines.insert(0, translation_modeladmin)
+		cls.inlines = type(cls.inlines)((translation_modeladmin,)) + cls.inlines
             else:
                 cls.inlines = [translation_modeladmin]
     return admin.ModelAdmin._original_new_before_dm(cls, model, admin_site, obj)
