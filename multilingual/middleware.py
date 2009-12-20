@@ -2,6 +2,7 @@ from django.utils.translation import get_language
 from multilingual.exceptions import LanguageDoesNotExist
 from multilingual.languages import set_default_language
 
+
 class DefaultLanguageMiddleware(object):
     """
     Binds DEFAULT_LANGUAGE_CODE to django's currently selected language.
@@ -10,7 +11,10 @@ class DefaultLanguageMiddleware(object):
     accessed by their name; i.e. model.field instead of model.field_en.
     """
     def process_request(self, request):
-        assert hasattr(request, 'session'), "The DefaultLanguageMiddleware middleware requires session middleware to be installed. Edit your MIDDLEWARE_CLASSES setting to insert 'django.contrib.sessions.middleware.SessionMiddleware'."
+        assert hasattr(request, 'session'), "The DefaultLanguageMiddleware \
+            middleware requires session middleware to be installed. Edit your \
+            MIDDLEWARE_CLASSES setting to insert \
+            'django.contrib.sessions.middleware.SessionMiddleware'."
         try:
             set_default_language(get_language())
         except LanguageDoesNotExist:

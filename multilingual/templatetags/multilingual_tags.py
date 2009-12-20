@@ -1,42 +1,37 @@
+import math
+import StringIO
+import tokenize
+
 from django import template
 from django import forms
 from django.template import Node, NodeList, Template, Context, resolve_variable
 from django.template.loader import get_template, render_to_string
 from django.conf import settings
 from django.utils.html import escape
-from multilingual.languages import (get_language_idx, get_default_language,
-                                    get_language_id_list)
-import math
-import StringIO
-import tokenize
+from multilingual.languages import get_language_idx, get_default_language,  \
+                                   get_language_id_list, get_language_code, \
+                                   get_language_name, get_language_bidi
 
 register = template.Library()
 
-from multilingual.languages import get_language_code, get_language_name, get_language_bidi
 
 def language_code(language_id):
     """
     Return the code of the language with id=language_id
     """
     return get_language_code(language_id)
-    
-register.filter(language_code)
 
 def language_name(language_id):
     """
     Return the name of the language with id=language_id
     """
     return get_language_name(language_id)
-    
-register.filter(language_name)
 
 def language_bidi(language_id):
     """
     Return whether the language with id=language_id is written right-to-left.
     """
     return get_language_bidi(language_id)
-
-register.filter(language_bidi)
 
 class EditTranslationNode(template.Node):
     def __init__(self, form_name, field_name, language=None):
@@ -69,8 +64,6 @@ def do_edit_translation(parser, token):
         language = None
     return EditTranslationNode(bits[1], bits[2], language)
 
-register.tag('edit_translation', do_edit_translation)
-
 def reorder_translation_formset_by_language_id(inline_admin_form):
     """
     Shuffle the forms in the formset of multilingual model in the
@@ -78,7 +71,11 @@ def reorder_translation_formset_by_language_id(inline_admin_form):
     """
     lang_to_form = dict([(form.form.initial['language_id'], form)
                          for form in inline_admin_form])
-    return [lang_to_form[language_id] for language_id in get_language_id_list()]
-    
-register.filter(reorder_translation_formset_by_language_id)
+    return [lang_to_form[language_id] for language_id in
+        get_language_id_list()]
 
+register.filter(language_code)
+register.filter(language_name)
+register.filter(language_bidi)
+register.tag('edit_translation', do_edit_translation)
+register.filter(reorder_translation_formset_by_language_id)

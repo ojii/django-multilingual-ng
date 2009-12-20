@@ -12,7 +12,8 @@ from django.db import connection
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.query import QuerySet, Q
 from django.db.models.sql.query import Query
-from django.db.models.sql.datastructures import EmptyResultSet, Empty, MultiJoin
+from django.db.models.sql.datastructures import EmptyResultSet, Empty, \
+                                                MultiJoin
 from django.db.models.sql.constants import *
 from django.db.models.sql.where import WhereNode, EverythingNode, AND, OR
 
@@ -55,7 +56,7 @@ class MultilingualQuery(Query):
                     field_alias = get_translated_field_alias(fname,
                         language_id)
                     extra_select[field_alias] = qn2(table_alias) + '.' + qn2(fname)
-            self.add_extra(extra_select, None,None,None,None,None)
+            self.add_extra(extra_select, None, None, None, None, None)
             self._trans_extra_select_count = len(self.extra_select)
 
     def clone(self, klass=None, **kwargs):
@@ -73,7 +74,7 @@ class MultilingualQuery(Query):
 
         if not self.include_translation_data:
             return
-        
+
         opts = self.model._meta
         qn = self.quote_name_unless_alias
         qn2 = self.connection.ops.quote_name
@@ -101,7 +102,7 @@ class MultilingualQuery(Query):
 
         if not self.include_translation_data:
             return result
-        
+
         from_ = result[0]
         for join in self.extra_join.values():
             from_.append(join)
@@ -273,7 +274,7 @@ class MultilingualQuery(Query):
         multi-name setup_joins call into separate calls.  Check it.
 
         -- marcin@elksoft.pl
-        
+
         Compute the necessary table joins for the passage through the fields
         given in 'names'. 'opts' is the Options class for the current model
         (which gives the table we are joining to), 'alias' is the alias for the
