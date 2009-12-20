@@ -24,6 +24,11 @@ The multilingual flatpages should now be available in the admin interface. They
 use the same templates as the original flatpages application: ``flatpages/base.html``.
 
 You will want to enable the middleware Django Multilingual provides if you want your
-pages to appear in the correct language automatically. 
+pages to appear in the correct language automatically::
+
+    MIDDLEWARE_CLASSES = (
+        ...
+        'multilingual.flatpages.middleware.FlatpageFallbackMiddleware',
+    )
 
 .. vi:ft=rst:expandtab:shiftwidth=4

@@ -65,7 +65,12 @@ that has translatable name and content fields. You install it by adding
 <p>The multilingual flatpages should now be available in the admin interface. They
 use the same templates as the original flatpages application: <tt class="docutils literal"><span class="pre">flatpages/base.html</span></tt>.</p>
 <p>You will want to enable the middleware Django Multilingual provides if you want your
-pages to appear in the correct language automatically.</p>
+pages to appear in the correct language automatically:</p>
+<div class="highlight-python"><pre>MIDDLEWARE_CLASSES = (
+    ...
+    'multilingual.flatpages.middleware.FlatpageFallbackMiddleware',
+)</pre>
+</div>
 </div>
 
 
