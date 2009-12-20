@@ -578,3 +578,9 @@ class MultilingualModelQuerySet(QuerySet):
             return super(MultilingualModelQuerySet, self).extra(order_by=new_field_names)
         else:
             return super(MultilingualModelQuerySet, self).order_by(*field_names)
+
+    def values(self, *fields):
+        raise NotImplementedError
+
+    def values_list(self, *fields, **kwargs):
+        raise NotImplementedError
