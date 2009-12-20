@@ -8,6 +8,7 @@ from django.utils.translation import ugettext as _
 from multilingual.languages import *
 from multilingual.utils import is_multilingual_model
 
+
 def _translation_form_full_clean(self, previous_full_clean):
     """
     There is a bug in Django that causes inline forms to be
@@ -19,7 +20,6 @@ def _translation_form_full_clean(self, previous_full_clean):
 
     TODO: create a fix for Django, have it accepted into trunk and get
     rid of this monkey patch.
-    
     """
 
     def cleaned_value(name):
@@ -39,12 +39,13 @@ def _translation_form_full_clean(self, previous_full_clean):
     else:
         return previous_full_clean()
 
+
 class TranslationInlineFormSet(BaseInlineFormSet):
 
     def _construct_forms(self):
         ## set the right default values for language_ids of empty (new) forms
         super(TranslationInlineFormSet, self)._construct_forms()
-        
+
         empty_forms = []
         lang_id_list = get_language_id_list()
         lang_to_form = dict(zip(lang_id_list, [None] * len(lang_id_list)))
@@ -66,7 +67,9 @@ class TranslationInlineFormSet(BaseInlineFormSet):
         super(TranslationInlineFormSet, self).add_fields(form, index)
 
         previous_full_clean = form.full_clean
-        form.full_clean = lambda: _translation_form_full_clean(form, previous_full_clean)
+        form.full_clean = lambda: _translation_form_full_clean(form, \
+            previous_full_clean)
+
 
 class TranslationModelAdmin(admin.StackedInline):
     template = "admin/edit_inline_translations_newforms.html"
@@ -74,6 +77,7 @@ class TranslationModelAdmin(admin.StackedInline):
     extra = get_language_count()
     max_num = get_language_count()
     formset = TranslationInlineFormSet
+
 
 class ModelAdminClass(admin.ModelAdmin.__metaclass__):
     """
@@ -87,6 +91,7 @@ class ModelAdminClass(admin.ModelAdmin.__metaclass__):
         attrs['prepopulated_fields'] = {}
         attrs['_dm_prepopulated_fields'] = prepopulated_fields
         return super(ModelAdminClass, cls).__new__(cls, name, bases, attrs)
+
 
 class ModelAdmin(admin.ModelAdmin):
     """
@@ -131,8 +136,8 @@ class ModelAdmin(admin.ModelAdmin):
                 # edit_inline_translations_newforms.html
                 # It is not DRY.
                 field_idx = language_id - 1
-                ret = {'auto_id': 'id_translations-%d-%s' % (field_idx, field.name)
-                       }
+                ret = {'auto_id': 'id_translations-%d-%s' % \
+                    (field_idx, field.name)}
             except:
                 ret = form[field_name]
             return ret
@@ -143,18 +148,21 @@ class ModelAdmin(admin.ModelAdmin):
         } for field_name, dependencies in self._dm_prepopulated_fields.items()]
 
         return super(ModelAdmin, self).render_change_form(request, context,
-                                                          add, change, form_url, obj)
+            add, change, form_url, obj)
+
 
 def get_translation_modeladmin(cls, model):
     if hasattr(cls, 'Translation'):
         tr_cls = cls.Translation
         if not issubclass(tr_cls, TranslationModelAdmin):
-            raise ValueError, ("%s.Translation must be a subclass "
-                               + " of multilingual.TranslationModelAdmin.") % cls.name
+            raise ValueError, ("%s.Translation must be a subclass " \
+                               " of multilingual.TranslationModelAdmin.") % \
+                               cls.name
     else:
         tr_cls = type("%s.Translation" % cls.__name__, (TranslationModelAdmin,), {})
     tr_cls.model = model._meta.translation_model
     return tr_cls
+
 
 # TODO: multilingual_modeladmin_new should go away soon.  The code will
 # be split between the ModelAdmin class, its metaclass and validation
@@ -188,10 +196,11 @@ def multilingual_modeladmin_new(cls, model, admin_site, obj=None):
         if not translation_modeladmin:
             translation_modeladmin = get_translation_modeladmin(cls, model)
             if cls.inlines:
-		cls.inlines = type(cls.inlines)((translation_modeladmin,)) + cls.inlines
+                cls.inlines = type(cls.inlines)((translation_modeladmin,)) + cls.inlines
             else:
                 cls.inlines = [translation_modeladmin]
     return admin.ModelAdmin._original_new_before_dm(cls, model, admin_site, obj)
+
 
 def install_multilingual_modeladmin_new():
     """
@@ -200,4 +209,3 @@ def install_multilingual_modeladmin_new():
     """
     admin.ModelAdmin._original_new_before_dm = admin.ModelAdmin.__new__
     admin.ModelAdmin.__new__ = staticmethod(multilingual_modeladmin_new)
-    

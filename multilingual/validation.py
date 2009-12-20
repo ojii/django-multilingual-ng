@@ -3,6 +3,7 @@ from django.db import models
 
 from multilingual.utils import is_multilingual_model
 
+
 def get_field(cls, model, opts, label, field):
     """
     Just like django.contrib.admin.validation.get_field, but knows
@@ -17,12 +18,14 @@ def get_field(cls, model, opts, label, field):
         # fall back to the old way -- see if model contains the field
         # directly
         pass
-    
+
     try:
         return opts.get_field(field)
     except models.FieldDoesNotExist:
-        raise ImproperlyConfigured("'%s.%s' refers to field '%s' that is missing from model '%s'."
-                % (cls.__name__, label, field, model.__name__))
+        raise ImproperlyConfigured("'%s.%s' refers to field '%s' that is " \
+            "missing from model '%s'." \
+            % (cls.__name__, label, field, model.__name__))
+
 
 def validate_admin_registration(cls, model):
     """
@@ -56,12 +59,13 @@ def validate_admin_registration(cls, model):
                         opts, "prepopulated_fields['%s'][%d]"
                         % (f, idx), f)
 
+
 def install_multilingual_admin_validation():
     from django.contrib.admin import validation
     old_validate = validation.validate
-    
+
     def new_validate(admin_class, model):
         old_validate(admin_class, model)
         validate_admin_registration(admin_class, model)
-    
+
     validation.validate = new_validate

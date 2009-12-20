@@ -1,4 +1,5 @@
 from django.utils.translation import get_language
+
 from multilingual.exceptions import LanguageDoesNotExist
 from multilingual.languages import set_default_language
 
@@ -10,6 +11,7 @@ class DefaultLanguageMiddleware(object):
     The effect of enabling this middleware is that translated fields can be
     accessed by their name; i.e. model.field instead of model.field_en.
     """
+
     def process_request(self, request):
         assert hasattr(request, 'session'), "The DefaultLanguageMiddleware \
             middleware requires session middleware to be installed. Edit your \

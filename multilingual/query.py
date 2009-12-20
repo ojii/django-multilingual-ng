@@ -12,8 +12,10 @@ from django.db import connection
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.query import QuerySet, Q
 from django.db.models.sql.query import Query
-from django.db.models.sql.datastructures import EmptyResultSet, Empty, \
-                                                MultiJoin
+from django.db.models.sql.datastructures import (
+    EmptyResultSet,
+    Empty,
+    MultiJoin)
 from django.db.models.sql.constants import *
 from django.db.models.sql.where import WhereNode, EverythingNode, AND, OR
 
@@ -23,19 +25,23 @@ try:
 
     def constraint_tuple(alias, col, field, lookup_type, value):
         return (Constraint(alias, col, field), lookup_type, value)
-
 except ImportError:
     # backwards compatibility, for Django versions 1.0 to rev. 9699
     def constraint_tuple(alias, col, field, lookup_type, value):
         return (alias, col, field, lookup_type, value)
 
-from multilingual.languages import (get_translation_table_alias, get_language_id_list,
-                                    get_default_language, get_translated_field_alias,
-                                    get_language_id_from_id_or_code)
+from multilingual.languages import (
+    get_translation_table_alias,
+    get_language_id_list,
+    get_default_language,
+    get_translated_field_alias,
+    get_language_id_from_id_or_code)
 
 __ALL__ = ['MultilingualModelQuerySet']
 
+
 class MultilingualQuery(Query):
+
     def __init__(self, model, connection, where=WhereNode):
         self.extra_join = {}
         self.include_translation_data = True
@@ -510,6 +516,7 @@ class MultilingualQuery(Query):
             return obj.get_count()
         else:
             return super(MultilingualQuery, self).get_count()
+
 
 class MultilingualModelQuerySet(QuerySet):
     """

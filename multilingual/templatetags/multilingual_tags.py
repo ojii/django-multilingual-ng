@@ -8,9 +8,13 @@ from django.template import Node, NodeList, Template, Context, resolve_variable
 from django.template.loader import get_template, render_to_string
 from django.conf import settings
 from django.utils.html import escape
-from multilingual.languages import get_language_idx, get_default_language,  \
-                                   get_language_id_list, get_language_code, \
-                                   get_language_name, get_language_bidi
+from multilingual.languages import (
+    get_language_idx,
+    get_default_language,
+    get_language_id_list,
+    get_language_code,
+    get_language_name,
+    get_language_bidi)
 
 register = template.Library()
 
@@ -21,17 +25,20 @@ def language_code(language_id):
     """
     return get_language_code(language_id)
 
+
 def language_name(language_id):
     """
     Return the name of the language with id=language_id
     """
     return get_language_name(language_id)
 
+
 def language_bidi(language_id):
     """
     Return whether the language with id=language_id is written right-to-left.
     """
     return get_language_bidi(language_id)
+
 
 class EditTranslationNode(template.Node):
     def __init__(self, form_name, field_name, language=None):
@@ -53,6 +60,7 @@ class EditTranslationNode(template.Node):
                                      self.field_name)
         return str(resolve_variable(real_name, context))
 
+
 def do_edit_translation(parser, token):
     bits = token.split_contents()
     if len(bits) not in [3, 4]:
@@ -63,6 +71,7 @@ def do_edit_translation(parser, token):
     else:
         language = None
     return EditTranslationNode(bits[1], bits[2], language)
+
 
 def reorder_translation_formset_by_language_id(inline_admin_form):
     """
