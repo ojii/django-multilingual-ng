@@ -100,9 +100,9 @@ def getter_generator(field_name, short_description):
     """
     Generate get_'field name' method for field field_name.
     """
-    def get_translation_field(self, language_id_or_code=None, fallback=False):
+    def get_translation_field(cls, language_id_or_code=None, fallback=False):
         try:
-            return getattr(self.get_translation(language_id_or_code,
+            return getattr(cls.get_translation(language_id_or_code,
                                                 fallback=fallback),
                            field_name)
         except TranslationDoesNotExist:
@@ -114,14 +114,13 @@ def setter_generator(field_name):
     """
     Generate set_'field name' method for field field_name.
     """
-    def set_translation_field(self, value, language_id_or_code=None):
-        setattr(self.get_translation(language_id_or_code, True),
+    def set_translation_field(cls, value, language_id_or_code=None):
+        setattr(cls.get_translation(language_id_or_code, True),
                 field_name, value)
     set_translation_field.short_description = "set " + field_name
     return set_translation_field
 
-def get_translation(self, language_id_or_code,
-                    create_if_necessary=False,
+def get_translation(cls, language_id_or_code, create_if_necessary=False,
                     fallback=False):
     """
     Get a translation instance for the given `language_id_or_code`.
@@ -134,34 +133,31 @@ def get_translation(self, language_id_or_code,
     3. if all of the above fails to find a translation, raise the
     TranslationDoesNotExist exception
     """
-
+    fallback = True
     # fill the cache if necessary
-    self.fill_translation_cache()
+    cls.fill_translation_cache()
 
     language_id = get_language_id_from_id_or_code(language_id_or_code, False)
     if language_id is None:
-        language_id = getattr(self, '_default_language', None)
+        language_id = getattr(cls, '_default_language', None)
     if language_id is None:
         language_id = get_default_language()
 
-    if language_id in self._translation_cache:
-        return self._translation_cache.get(language_id, None)
+    if language_id in cls._translation_cache:
+        return cls._translation_cache.get(language_id, None)
 
     if create_if_necessary:
         # case 1
-        new_translation = self._meta.translation_model(master=self,
-                                                       language_id=language_id)
-        self._translation_cache[language_id] = new_translation
+        new_translation = cls._meta.translation_model(master=cls,
+                                                      language_id=language_id)
+        cls._translation_cache[language_id] = new_translation
         return new_translation
-    elif fallback:
+    else:
         # case 2
-        for fb_lang_id in FALLBACK_LANGUAGE_IDS:
-            trans = self._translation_cache.get(fb_lang_id, None)
+        for fb_lang_id in get_fallbacks(language_id):
+            trans = cls._translation_cache.get(fb_lang_id, None)
             if trans:
                 return trans
-        raise TranslationDoesNotExist(language_id)
-    else:
-        # case 3
         raise TranslationDoesNotExist(language_id)
 
 class Translation:

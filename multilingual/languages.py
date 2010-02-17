@@ -12,7 +12,7 @@ LANGUAGES = settings.LANGUAGES
 try:
     FALLBACK_LANGUAGES = settings.MULTILINGUAL_FALLBACK_LANGUAGES
 except AttributeError:
-    FALLBACK_LANGUAGES = [lang[0] for lang in settings.LANGUAGES]
+    FALLBACK_LANGUAGES = dict([(lang[0], [lang[0]] + [l[0] for l in filter(settings.LANGUAGES)]) for lang in settings.LANGUAGES])
 
 from django.utils.translation import ugettext_lazy as _
 from multilingual.exceptions import LanguageDoesNotExist
@@ -120,8 +120,15 @@ def get_translated_field_alias(field_name, language_id=None):
     return ('_trans_'
             + field_name
             + '_' + _to_db_identifier(get_language_code(language_id)))
+    
+def get_fallbacks(language_code_or_id):
+    lang_id = get_language_id_from_id_or_code(language_code_or_id)
+    fallbacks = FALLBACK_LANGUAGE_IDS.get(lang_id, [])
+    if lang_id is not None and lang_id not in fallbacks:
+        fallbacks.insert(0, lang_id)
+    return fallbacks
 
-FALLBACK_LANGUAGE_IDS = [get_language_id_from_id_or_code(lang_code) for lang_code in FALLBACK_LANGUAGES]
+FALLBACK_LANGUAGE_IDS = dict([(get_language_id_from_id_or_code(key), [get_language_id_from_id_or_code(v) for v in val]) for key,val in FALLBACK_LANGUAGES.items()])
 
 FALLBACK_FIELD_SUFFIX = '_any'
 
