@@ -1,211 +1,258 @@
+"""Admin suppor for inlines
+
+Peter Cicman, Divio GmbH, 2008
+"""
+from multilingual.languages import get_language_id_from_id_or_code
+from django.utils.text import capfirst, get_text_list
+from django.contrib.admin.util import flatten_fieldsets
+from django.http import HttpResponseRedirect
+from django.utils.encoding import force_unicode
+
+import re
+from copy import deepcopy
+from django.conf import settings
+from django import forms
 from django.contrib import admin
-from django.forms.models import BaseInlineFormSet
-from django.forms.fields import BooleanField
-from django.forms.formsets import DELETION_FIELD_NAME
-from django.forms.util import ErrorDict
+from django.forms.util import ErrorList, ValidationError
+from django.forms.models import BaseInlineFormSet, ModelFormMetaclass
 from django.utils.translation import ugettext as _
 
-from multilingual.languages import *
-from multilingual.utils import is_multilingual_model
+MULTILINGUAL_PREFIX = '_ml__trans_'
+MULTILINGUAL_INLINE_PREFIX = '_ml__inline_trans_'
+
+class MultilungualInlineModelForm(forms.ModelForm):
+    def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
+                 initial=None, error_class=ErrorList, label_suffix=':',
+                 empty_permitted=False, instance=None):
+        """Just full up intitial values for ml fields
+        """
+        super(MultilungualInlineModelForm, self).__init__(data, files, auto_id, prefix,
+                                                    initial, error_class, label_suffix,
+                                                    empty_permitted, instance)
+        
+        # read data for existing object, and set them as initial
+        for name, db_field in get_translated_fields(self.instance):
+            full_name = '%s%s' % (MULTILINGUAL_INLINE_PREFIX, name)
+            if full_name in self.fields:
+                self.fields[full_name].initial = getattr(self.instance, name, '')
 
 
-def _translation_form_full_clean(self, previous_full_clean):
-    """
-    There is a bug in Django that causes inline forms to be
-    validated even if they are marked for deletion.
-
-    This function fixes that by disabling validation
-    completely if the delete field is marked and only copying
-    the absolutely required fields: PK and FK to parent.
-
-    TODO: create a fix for Django, have it accepted into trunk and get
-    rid of this monkey patch.
-    """
-
-    def cleaned_value(name):
-        field = self.fields[name]
-        val = field.widget.value_from_datadict(self.data, self.files,
-                                               self.add_prefix(name))
-        return field.clean(val)
-
-    delete = cleaned_value(DELETION_FIELD_NAME)
-
-    if delete:
-        # this object is to be skipped or deleted, so only
-        # construct the minimal cleaned_data
-        self.cleaned_data = {'DELETE': delete,
-                             'id': cleaned_value('id')}
-        self._errors = ErrorDict()
-    else:
-        return previous_full_clean()
-
-
-class TranslationInlineFormSet(BaseInlineFormSet):
-
-    def _construct_forms(self):
-        ## set the right default values for language_ids of empty (new) forms
-        super(TranslationInlineFormSet, self)._construct_forms()
-
-        empty_forms = []
-        lang_id_list = get_language_id_list()
-        lang_to_form = dict(zip(lang_id_list, [None] * len(lang_id_list)))
-
-        for form in self.forms:
-            language_id = form.initial.get('language_id')
-            if language_id:
-                lang_to_form[language_id] = form
-            else:
-                empty_forms.append(form)
-
-        for language_id in lang_id_list:
-            form = lang_to_form[language_id]
-            if form is None:
-                form = empty_forms.pop(0)
-                form.initial['language_id'] = language_id
+class MultilingualInlineFormSet(BaseInlineFormSet):
+    def save_new(self, form, commit=True):
+        """NOTE: save_new method is completely overridden here, there's no
+        other way to pretend double save otherwise. Just assign translated data
+        to object  
+        """
+        kwargs = {self.fk.get_attname(): self.instance.pk}
+        new_obj = self.model(**kwargs)
+        self._prepare_multilingual_object(new_obj, form)
+        return forms.save_instance(form, new_obj, exclude=[self._pk_field.name], commit=commit)
     
-    def add_fields(self, form, index):
-        super(TranslationInlineFormSet, self).add_fields(form, index)
-
-        previous_full_clean = form.full_clean
-        form.full_clean = lambda: _translation_form_full_clean(form, \
-            previous_full_clean)
-
-
-class TranslationModelAdmin(admin.StackedInline):
-    template = "admin/edit_inline_translations_newforms.html"
-    fk_name = 'master'
-    extra = get_language_count()
-    max_num = get_language_count()
-    formset = TranslationInlineFormSet
-
-
-class ModelAdminClass(admin.ModelAdmin.__metaclass__):
-    """
-    A metaclass for ModelAdmin below.
-    """
+    def save_existing(self, form, instance, commit=True):
+        """NOTE: save_new method is completely overridden here, there's no
+        other way to pretend double save otherwise. Just assign translated data
+        to object  
+        """
+        self._prepare_multilingual_object(instance, form)
+        return forms.save_instance(form, instance, exclude=[self._pk_field.name], commit=commit)
     
-    def __new__(cls, name, bases, attrs):
-        # Move prepopulated_fields somewhere where Django won't see
-        # them.  We have to handle them ourselves.
-        prepopulated_fields = attrs.get('prepopulated_fields', {})
-        attrs['prepopulated_fields'] = {}
-        attrs['_dm_prepopulated_fields'] = prepopulated_fields
-        return super(ModelAdminClass, cls).__new__(cls, name, bases, attrs)
+    def _prepare_multilingual_object(self, obj, form):
+        for name in form.cleaned_data:
+            m = re.match(r'^%s(?P<field_name>.*)$' % MULTILINGUAL_INLINE_PREFIX, name)
+            if m:
+                setattr(obj, m.groupdict()['field_name'], form.cleaned_data[name])
+      
+      
+class MultilingualInlineAdmin(admin.TabularInline):
+    formset = MultilingualInlineFormSet
+    form = MultilungualInlineModelForm
+    
+    template = 'admin/multilingual/edit_inline/tabular.html'
+    
+    # css class added to inline box
+    inline_css_class = None
+    
+    use_language = None
+    #TODO: add some nice template
+    
+    def __init__(self, parent_model, admin_site):
+        super(MultilingualInlineAdmin, self).__init__(parent_model, admin_site)
+        if hasattr(self, 'use_fields'):
+            # go around admin fields structure validation
+            self.fields = self.use_fields
+        
+    def get_formset(self, request, obj=None, **kwargs):
+        FormSet = super(MultilingualInlineAdmin, self).get_formset(request, obj=None, **kwargs)
+        
+        for name, field in get_translated_fields(self.model, self.use_language):
+            FormSet.form.base_fields['%s%s' % (MULTILINGUAL_INLINE_PREFIX, name)] = self.formfield_for_dbfield(field)
+        return FormSet
+    
+    
+class MultilingualModelAdminForm(forms.ModelForm):
+    # for rendering / saving multilingual fields connecte to model, takes place
+    # when admin per language is ussed
+    
+    def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
+                 initial=None, error_class=ErrorList, label_suffix=':',
+                 empty_permitted=False, instance=None):
+        """Just full up intitial values for ml fields
+        """
+        super(MultilingualModelAdminForm, self).__init__(data, files, auto_id, prefix,
+                                                    initial, error_class, label_suffix,
+                                                    empty_permitted, instance)
+        # read data for existing object, and set them as initial
+        for name in self.ml_fields:
+            self.fields[name].initial = getattr(self.instance, "%s_%s" % (name, self.use_language), '')
+    
+    def clean(self):
+        cleaned_data = super(MultilingualModelAdminForm, self).clean()
+        self.validate_ml_unique()
+        return cleaned_data
+    
+    def validate_ml_unique(self):
+        form_errors = []
+        
+        for check in self.instance._meta.translation_model._meta.unique_together[:]:
+            lookup_kwargs = {'language_id': get_language_id_from_id_or_code(self.use_language)}
+            for field_name in check:
+                #local_name = "%s_%s" % (field_name, self.use_language)
+                if self.cleaned_data.get(field_name) is not None:
+                    lookup_kwargs[field_name] = self.cleaned_data.get(field_name) 
+            
+            if len(check) == 2 and 'master' in check and 'language_id' in check:
+                continue
+                
+            qs = self.instance._meta.translation_model.objects.filter(**lookup_kwargs)
+            if self.instance.pk is not None:
+                qs = qs.exclude(master=self.instance.pk)
+            
+            if qs.count():
+                model_name = capfirst(self.instance._meta.verbose_name)
+                field_labels = []
+                for field_name in check:
+                    if field_name == "language_id":
+                        field_labels.append(_("language"))
+                    elif field_name == "master":
+                        continue
+                    else:
+                        field_labels.append(self.instance._meta.translation_model._meta.get_field_by_name(field_name)[0].verbose_name)
+                field_labels = get_text_list(field_labels, _('and'))
+                form_errors.append(
+                    _(u"%(model_name)s with this %(field_label)s already exists.") % \
+                    {'model_name': unicode(model_name),
+                     'field_label': unicode(field_labels)}
+                )
+        if form_errors:
+            # Raise the unique together errors since they are considered
+            # form-wide.
+            raise ValidationError(form_errors)
+                
+    
+    def save(self, commit=True):
+        self._prepare_multilingual_object(self.instance, self)
+        return super(MultilingualModelAdminForm, self).save(commit)    
+        
+        
+    def _prepare_multilingual_object(self, obj, form):
+        for name in self.ml_fields:
+            setattr(obj, "%s_%s" % (name, self.use_language), form.cleaned_data[name])
+
 
 
 class ModelAdmin(admin.ModelAdmin):
-    """
-    All model admins for multilingual models must inherit this class
-    instead of django.contrib.admin.ModelAdmin.
-    """
-    __metaclass__ = ModelAdminClass
     
-    def _media(self):
-        media = super(ModelAdmin, self)._media()
-        if getattr(self.__class__, '_dm_prepopulated_fields', None):
-            from django.conf import settings
-            media.add_js(['%sjs/urlify.js' % (settings.ADMIN_MEDIA_PREFIX,)])
-        return media
-    media = property(_media)
-
-    def render_change_form(self, request, context, add=False, change=False,
-                           form_url='', obj=None):
-        # I'm overriding render_change_form to inject information
-        # about prepopulated_fields
-
-        trans_model = self.model._meta.translation_model
-        trans_fields = trans_model._meta.translated_fields
-        adminform = context['adminform']
-        form = adminform.form
-
-        def field_name_to_fake_field(field_name):
-            """
-            Return something that looks like a form field enough to
-            fool prepopulated_fields_js.html
-
-            For field_names of real fields in self.model this actually
-            returns a real form field.
-            """
-            try:
-                field, language_id = trans_fields[field_name]
-                if language_id is None:
-                    language_id = get_default_language()
-
-                # TODO: we have this mapping between language_id and
-                # field id in two places -- here and in
-                # edit_inline_translations_newforms.html
-                # It is not DRY.
-                field_idx = language_id - 1
-                ret = {'auto_id': 'id_translations-%d-%s' % \
-                    (field_idx, field.name)}
-            except:
-                ret = form[field_name]
-            return ret
-
-        adminform.prepopulated_fields = [{
-            'field': field_name_to_fake_field(field_name),
-            'dependencies': [field_name_to_fake_field(f) for f in dependencies]
-        } for field_name, dependencies in self._dm_prepopulated_fields.items()]
-
-        return super(ModelAdmin, self).render_change_form(request, context,
-            add, change, form_url, obj)
-
-
-def get_translation_modeladmin(cls, model):
-    if hasattr(cls, 'Translation'):
-        tr_cls = cls.Translation
-        if not issubclass(tr_cls, TranslationModelAdmin):
-            raise ValueError, ("%s.Translation must be a subclass " \
-                               " of multilingual.TranslationModelAdmin.") % \
-                               cls.name
-    else:
-        tr_cls = type("%s.Translation" % cls.__name__, (TranslationModelAdmin,), {})
-    tr_cls.model = model._meta.translation_model
-    return tr_cls
-
-
-# TODO: multilingual_modeladmin_new should go away soon.  The code will
-# be split between the ModelAdmin class, its metaclass and validation
-# code.
-def multilingual_modeladmin_new(cls, model, admin_site, obj=None):
-    if is_multilingual_model(model):
-        if cls is admin.ModelAdmin:
-            # the model is being registered with the default
-            # django.contrib.admin.options.ModelAdmin.  Replace it
-            # with our ModelAdmin, since it is safe to assume it is a
-            # simple call to admin.site.register without just model
-            # passed
-
-            # subclass it, because we need to set the inlines class
-            # attribute below
-            cls = type("%sAdmin" % model.__name__, (ModelAdmin,), {})
-
-        # make sure it subclasses multilingual.ModelAdmin
-        if not issubclass(cls, ModelAdmin):
-            from warnings import warn
-            warn("%s should be registered with a subclass of "
-                 " of multilingual.ModelAdmin." % model, DeprecationWarning)
+    # use special template to render tabs for languages on top
+    change_form_template = "admin/multilingual/change_form.html"
+    
+    form = MultilingualModelAdminForm
+    
+    _multilingual_model_admin = True
+    
+    use_language = None
+    
+    def __init__(self, model, admin_site):
+        if hasattr(self, 'use_fieldsets'):
+            # go around admin fieldset structure validation
+            self.fieldsets = self.use_fieldsets
+        if hasattr(self, 'use_prepopulated_fields'):
+            # go around admin fieldset structure validation
+            self.prepopulated_fields = self.use_prepopulated_fields
+        super(ModelAdmin, self).__init__(model, admin_site)
+    
+    
+    
+    def get_form(self, request, obj=None, **kwargs):    
+        self.use_language = request.GET.get('lang', request.GET.get('language', settings.LANGUAGES[settings.DEFAULT_LANGUAGE][0]))
+        # assign language to inlines, so they now how to render
+        for inline in self.inline_instances:
+            if isinstance(inline, MultilingualInlineAdmin):
+                inline.use_language = self.use_language        
         
-        # if the inlines already contain a class for the
-        # translation model, use it and don't create another one
-        translation_modeladmin = None
-        for inline in getattr(cls, 'inlines', []):
-            if inline.model == model._meta.translation_model:
-                translation_modeladmin = inline
-
-        if not translation_modeladmin:
-            translation_modeladmin = get_translation_modeladmin(cls, model)
-            if cls.inlines:
-                cls.inlines = type(cls.inlines)((translation_modeladmin,)) + cls.inlines
+        Form = super(ModelAdmin, self).get_form(request, obj, **kwargs)
+        
+        Form.ml_fields = {}
+        for name, field in get_default_translated_fields(self.model):
+            if not field.editable:
+                continue
+            form_field = self.formfield_for_dbfield(field)
+            local_name = "%s_%s" % (name, self.use_language)
+            Form.ml_fields[name] = form_field
+            Form.base_fields[name] = form_field
+            Form.use_language = self.use_language
+        return Form
+    
+    def render_change_form(self, request, context, add=False, change=False, form_url='', obj=None):
+        # add context variables
+        context.update({
+            'current_language_index': get_language_id_from_id_or_code(self.use_language),
+            'current_language_code': self.use_language
+        })
+        return super(ModelAdmin, self).render_change_form(request, context, add, change, form_url, obj)
+    
+                
+    def response_change(self, request, obj):
+        # because save & continue - so it shows the same language
+        if request.POST.has_key("_continue"):
+            opts = obj._meta
+            msg = _('The %(name)s "%(obj)s" was changed successfully.') % {'name': force_unicode(opts.verbose_name), 'obj': force_unicode(obj)}
+            self.message_user(request, msg + ' ' + _("You may edit it again below."))
+            lang, path = request.GET.get('lang', None), request.path
+            if lang:
+                lang = "lang=%s" % lang
+            if request.REQUEST.has_key('_popup'):
+                path += "?_popup=1" + "&%s" % lang
             else:
-                cls.inlines = [translation_modeladmin]
-    return admin.ModelAdmin._original_new_before_dm(cls, model, admin_site, obj)
+                path += "?%s" % lang
+            return HttpResponseRedirect(path)
+        return super(ModelAdmin, self).response_change(request, obj)
 
+    
+    class Media:
+        css = {
+            'all': ('%smultilingual/admin/css/style.css' % settings.MEDIA_URL,)
+        }
+    
 
-def install_multilingual_modeladmin_new():
-    """
-    Override ModelAdmin.__new__ to create automatic inline
-    editor for multilingual models.
-    """
-    admin.ModelAdmin._original_new_before_dm = admin.ModelAdmin.__new__
-    admin.ModelAdmin.__new__ = staticmethod(multilingual_modeladmin_new)
+def get_translated_fields(model, language=None):
+    # returns all the translatable fields, except of the default ones
+    if not language:
+        for name, (field, non_default) in model._meta.translated_fields.items():
+            if non_default: 
+                yield name, field
+    else:
+        # if language is defined return fields in the same order, like they are defined in the 
+        # translation class
+        for field in model._meta.fields:
+            if field.primary_key:
+                continue
+            name = field.name + "_%s" % language
+            field = model._meta.translated_fields.get(name, None)
+            if field:
+                yield name, field[0]
+        
+
+def get_default_translated_fields(model):
+    for name, (field, non_default) in model._meta.translation_model._meta.translated_fields.items():
+        if not non_default:
+            yield name, field

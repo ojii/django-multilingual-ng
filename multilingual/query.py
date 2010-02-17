@@ -12,6 +12,7 @@ from django.db import connection
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.query import QuerySet, Q
 from django.db.models.sql.query import Query
+from django.db import connections, DEFAULT_DB_ALIAS
 from django.db.models.sql.datastructures import (
     EmptyResultSet,
     Empty,
@@ -37,19 +38,21 @@ from multilingual.languages import (
     get_translated_field_alias,
     get_language_id_from_id_or_code)
 
+from compiler import MultilingualSQLCompiler
+
 __ALL__ = ['MultilingualModelQuerySet']
 
 
 class MultilingualQuery(Query):
 
-    def __init__(self, model, connection, where=WhereNode):
+    def __init__(self, model, where=WhereNode):
         self.extra_join = {}
         self.include_translation_data = True
         extra_select = {}
-        super(MultilingualQuery, self).__init__(model, connection, where=where)
+        super(MultilingualQuery, self).__init__(model, where=where)
         opts = self.model._meta
-        qn = self.quote_name_unless_alias
-        qn2 = self.connection.ops.quote_name
+        qn = self.get_compiler(DEFAULT_DB_ALIAS).quote_name_unless_alias
+        qn2 = self.get_compiler(DEFAULT_DB_ALIAS).connection.ops.quote_name
         master_table_name = opts.db_table
         translation_opts = opts.translation_model._meta
         trans_table_name = translation_opts.db_table
@@ -73,50 +76,10 @@ class MultilingualQuery(Query):
         defaults.update(kwargs)
         return super(MultilingualQuery, self).clone(klass=klass, **defaults)
 
-    def pre_sql_setup(self):
-        """Adds the JOINS and SELECTS for fetching multilingual data.
-        """
-        super(MultilingualQuery, self).pre_sql_setup()
-
-        if not self.include_translation_data:
-            return
-
-        opts = self.model._meta
-        qn = self.quote_name_unless_alias
-        qn2 = self.connection.ops.quote_name
-        if hasattr(opts, 'translation_model'):
-            master_table_name = opts.db_table
-            translation_opts = opts.translation_model._meta
-            trans_table_name = translation_opts.db_table
-            for language_id in get_language_id_list():
-                table_alias = get_translation_table_alias(trans_table_name,
-                                                          language_id)
-                trans_join = ('LEFT JOIN %s AS %s ON ((%s.master_id = %s.%s) AND (%s.language_id = %s))'
-                           % (qn2(translation_opts.db_table),
-                           qn2(table_alias),
-                           qn2(table_alias),
-                           qn(master_table_name),
-                           qn2(self.model._meta.pk.column),
-                           qn2(table_alias),
-                           language_id))
-                self.extra_join[table_alias] = trans_join
-
-    def get_from_clause(self):
-        """Add the JOINS for related multilingual fields filtering.
-        """
-        result = super(MultilingualQuery, self).get_from_clause()
-
-        if not self.include_translation_data:
-            return result
-
-        from_ = result[0]
-        for join in self.extra_join.values():
-            from_.append(join)
-        return (from_, result[1])
-
     def add_filter(self, filter_expr, connector=AND, negate=False, trim=False,
             can_reuse=None, process_extras=True):
-        """Copied from add_filter to generate WHERES for translation fields.
+        """
+        Copied from add_filter to generate WHERES for translation fields.
         """
         arg, value = filter_expr
         parts = arg.split(LOOKUP_SEP)
@@ -137,7 +100,7 @@ class MultilingualQuery(Query):
             lookup_type = 'isnull'
             value = True
         elif (value == '' and lookup_type == 'exact' and
-              connection.features.interprets_empty_strings_as_nulls):
+              self.get_compiler(DEFAULT_DB_ALIAS).connection.features.interprets_empty_strings_as_nulls):
             lookup_type = 'isnull'
             value = True
         elif callable(value):
@@ -339,8 +302,8 @@ class MultilingualQuery(Query):
                     trans_table_alias = get_translation_table_alias(
                         model._meta.db_table, language_id)
                     new_table = (master_table_name + "__" + trans_table_alias)
-                    qn = self.quote_name_unless_alias
-                    qn2 = self.connection.ops.quote_name
+                    qn = self.get_compiler(DEFAULT_DB_ALIAS).quote_name_unless_alias
+                    qn2 = self.get_compiler(DEFAULT_DB_ALIAS).connection.ops.quote_name
                     trans_join = ('LEFT JOIN %s AS %s ON ((%s.master_id = %s.%s) AND (%s.language_id = %s))'
                                  % (qn2(model._meta.db_table),
                                  qn2(new_table),
@@ -505,7 +468,7 @@ class MultilingualQuery(Query):
                                                       allow_many, allow_explicit_fk,
                                                       can_reuse, negate, process_extras)
 
-    def get_count(self):
+    def get_count(self, using=None):
         # optimize for the common special case: count without any
         # filters
         if ((not (self.select or self.where or self.extra_where))
@@ -513,9 +476,16 @@ class MultilingualQuery(Query):
             obj = self.clone(extra_select = {},
                              extra_join = {},
                              include_translation_data = False)
-            return obj.get_count()
+            return obj.get_count(using)
         else:
-            return super(MultilingualQuery, self).get_count()
+            return super(MultilingualQuery, self).get_count(using)
+
+    def get_compiler(self, using=None, connection=None):
+        if using is None and connection is None:
+            raise ValueError("Need either using or connection")
+        if using:
+            connection = connections[using]
+        return MultilingualSQLCompiler(self, connection, using)
 
 
 class MultilingualModelQuerySet(QuerySet):
@@ -524,9 +494,9 @@ class MultilingualModelQuerySet(QuerySet):
     fields in ordering and filtering methods.
     """
 
-    def __init__(self, model=None, query=None):
-        query = query or MultilingualQuery(model, connection)
-        super(MultilingualModelQuerySet, self).__init__(model, query)
+    def __init__(self, model=None, query=None, using=None):
+        query = query or MultilingualQuery(model)
+        super(MultilingualModelQuerySet, self).__init__(model, query, using)
 
     def for_language(self, language_id_or_code):
         """

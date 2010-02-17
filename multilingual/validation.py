@@ -58,14 +58,3 @@ def validate_admin_registration(cls, model):
                 get_field(cls, model,
                         opts, "prepopulated_fields['%s'][%d]"
                         % (f, idx), f)
-
-
-def install_multilingual_admin_validation():
-    from django.contrib.admin import validation
-    old_validate = validation.validate
-
-    def new_validate(admin_class, model):
-        old_validate(admin_class, model)
-        validate_admin_registration(admin_class, model)
-
-    validation.validate = new_validate

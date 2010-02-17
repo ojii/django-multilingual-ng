@@ -1,5 +1,3 @@
 include MANIFEST.in
 recursive-include multilingual/templates *
 recursive-include multilingual/flatpages/templates *
-recursive-include testproject/templates *
-recursive-include testproject/articles/fixtures/initial_data.xml

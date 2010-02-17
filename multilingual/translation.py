@@ -12,12 +12,8 @@ from multilingual.languages import *
 from multilingual.exceptions import TranslationDoesNotExist
 from multilingual.fields import TranslationForeignKey
 from multilingual import manager
-from multilingual.admin import install_multilingual_modeladmin_new
-
-# TODO: remove this import.  It is here only because earlier versions
-# of the library required importing TranslationModelAdmin from here
-# instead of taking it directly from multilingual
-from multilingual.admin import TranslationModelAdmin
+# To Be Depricated
+#from multilingual.utils import install_multilingual_modeladmin_new
 
 from new import instancemethod
 
@@ -365,7 +361,8 @@ def install_translation_library():
     ModelBase.__new__ = staticmethod(multilingual_modelbase_new)
     ModelBase._multilingual_installed = True
 
-    install_multilingual_modeladmin_new()
+    # To Be Deprecated
+    #install_multilingual_modeladmin_new()
 
 # install the library
 install_translation_library()

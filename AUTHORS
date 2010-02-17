@@ -1,6 +1,12 @@
+django-multilingual-ng was branched from django-multilingual in 2010 by Jonas Obrist.
+
+Current or former committers of django-multilingual-ng:
+
+	Jonas Obrist
+
 django-multilingual was originally created in 2007 by Marcin Kaszynski.
 
-Current or former committers:
+Current or former committers of django-multilingual:
 
     Ashley Camba
     Joost Cassee
@@ -8,7 +14,7 @@ Current or former committers:
     Marcin Kaszynski
     Matthias Urlichs
 
-Contributors:
+Contributors of django-multilingual:
 
     Jure Cuhalev
     glin@seznam.cz
