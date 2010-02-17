@@ -38,6 +38,27 @@ class MultilungualInlineModelForm(forms.ModelForm):
 
 
 class MultilingualInlineFormSet(BaseInlineFormSet):
+    def get_queryset(self):
+        if not hasattr(self, '_queryset'):
+            if self.queryset is not None:
+                qs = self.queryset
+            else:
+                qs = self.model._default_manager.get_query_set()
+
+            # If the queryset isn't already ordered we need to add an
+            # artificial ordering here to make sure that all formsets
+            # constructed from this queryset have the same form order.
+            if not qs.ordered:
+                qs = qs.order_by(self.model._meta.pk.name)
+
+            if self.max_num > 0:
+                self._queryset = qs[:self.max_num]
+            else:
+                self._queryset = qs
+            if hasattr(self, 'use_language'):
+                self._queryset  = qs.filter(translations__language_id=get_language_id_from_id_or_code(self.use_language))
+        return self._queryset
+
     def save_new(self, form, commit=True):
         """NOTE: save_new method is completely overridden here, there's no
         other way to pretend double save otherwise. Just assign translated data
@@ -83,7 +104,7 @@ class MultilingualInlineAdmin(admin.TabularInline):
         
     def get_formset(self, request, obj=None, **kwargs):
         FormSet = super(MultilingualInlineAdmin, self).get_formset(request, obj=None, **kwargs)
-        
+        FormSet.use_language = self.use_language
         for name, field in get_translated_fields(self.model, self.use_language):
             FormSet.form.base_fields['%s%s' % (MULTILINGUAL_INLINE_PREFIX, name)] = self.formfield_for_dbfield(field)
         return FormSet
@@ -187,7 +208,7 @@ class ModelAdmin(admin.ModelAdmin):
         # assign language to inlines, so they now how to render
         for inline in self.inline_instances:
             if isinstance(inline, MultilingualInlineAdmin):
-                inline.use_language = self.use_language        
+                inline.use_language = self.use_language
         
         Form = super(ModelAdmin, self).get_form(request, obj, **kwargs)
         
@@ -235,19 +256,22 @@ class ModelAdmin(admin.ModelAdmin):
     
 
 def get_translated_fields(model, language=None):
+    meta = model._meta
+    if not hasattr(meta, 'translated_fields'):
+        meta = meta.translation_model._meta
     # returns all the translatable fields, except of the default ones
     if not language:
-        for name, (field, non_default) in model._meta.translated_fields.items():
+        for name, (field, non_default) in meta.translated_fields.items():
             if non_default: 
                 yield name, field
     else:
         # if language is defined return fields in the same order, like they are defined in the 
         # translation class
-        for field in model._meta.fields:
+        for field in meta.fields:
             if field.primary_key:
                 continue
             name = field.name + "_%s" % language
-            field = model._meta.translated_fields.get(name, None)
+            field = meta.translated_fields.get(name, None)
             if field:
                 yield name, field[0]
         
