@@ -1,0 +1,27 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_modify adminmedia %}
+
+{% block breadcrumbs %}
+
+{% if not is_popup %}
+	<div class="breadcrumbs">
+	     <a href="../../../">{% trans "Home" %}</a> &rsaquo;
+	     <a href="../../">{{ app_label|capfirst|escape }}</a> &rsaquo; 
+	     {% if has_change_permission %}<a href="../">{{ opts.verbose_name_plural|capfirst }}</a>{% else %}{{ opts.verbose_name_plural|capfirst }}{% endif %} &rsaquo; 
+	     {% if add %}{% trans "Add" %} {{ opts.verbose_name }}{% else %}{{ original|truncatewords:"18" }}{% endif %}
+	</div>
+{% endif %}
+	<div id="language-bar" class="breadcrumbs">
+		<h4>{% trans 'content language' %}:</h4>
+		<ul>
+			{% for code in LANGUAGE_CODES %}
+				{% ifequal code current_language_code %}<li class="active">{{ code }}</li>
+				{% else %}<li><a href="./?lang={{ code }}">{{ code }}</a></li>
+				{% endifequal %}		
+			{% endfor %}
+		</ul>
+	</div>
+
+{% endblock %}
+
+{% block content_title %}{% if title %}<h1>{{ title }} ({% trans "language" %}: {{ current_language_code }})</h1>{% endif %}{% endblock %}

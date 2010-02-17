@@ -1,0 +1,5 @@
+/*#language-bar { float: right; position: relative; margin-top: -1.9em; margin-right: 16px; }*/
+#language-bar h4 { display: inline; font-weight: normal; font-size: 11px; }
+#language-bar ul { margin: 4px 0; padding: 0;}
+#language-bar ul li { list-style: none; display: inline; padding: 2px 8px; }
+#language-bar ul li.active {  color: #999; }
