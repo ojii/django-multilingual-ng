@@ -8,3 +8,9 @@ Django 1.2 as well as providing admin UI improvements.
 multilingual-ng tries to be compatible with django-multilingual whenever
 possible. In the best case you can just replace django-multilingual-ng with
 django-multilingual without having to change any code in your apps.
+
+Note that since multilingual-ng does not use language_id's anymore, you'll have
+to use the mlng_convert command to migrate your old apps to ng. For this you
+need south installed.
+
+I'll write documentation once this project hits a somewhat stable level.
