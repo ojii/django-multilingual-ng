@@ -33,10 +33,9 @@ except ImportError:
 
 from multilingual.languages import (
     get_translation_table_alias,
-    get_language_id_list,
+    get_language_code_list,
     get_default_language,
-    get_translated_field_alias,
-    get_language_id_from_id_or_code)
+    get_translated_field_alias)
 
 from compiler import MultilingualSQLCompiler
 
@@ -58,12 +57,12 @@ class MultilingualQuery(Query):
         trans_table_name = translation_opts.db_table
         if hasattr(opts, 'translation_model'):
             master_table_name = opts.db_table
-            for language_id in get_language_id_list():
+            for language_code in get_language_code_list():
                 for fname in [f.attname for f in translation_opts.fields]:
                     table_alias = get_translation_table_alias(trans_table_name,
-                        language_id)
+                        language_code)
                     field_alias = get_translated_field_alias(fname,
-                        language_id)
+                        language_code)
                     extra_select[field_alias] = qn2(table_alias) + '.' + qn2(fname)
             self.add_extra(extra_select, None, None, None, None, None)
             self._trans_extra_select_count = len(self.extra_select)
@@ -128,12 +127,12 @@ class MultilingualQuery(Query):
             if field_name in translation_opts.translated_fields.keys():
                 field, model, direct, m2m = opts.get_field_by_name(field_name)
                 if model == opts.translation_model:
-                    language_id = translation_opts.translated_fields[field_name][1]
-                    if language_id is None:
-                        language_id = get_default_language()
+                    language_code = translation_opts.translated_fields[field_name][1]
+                    if language_code is None:
+                        language_code = get_default_language()
                     master_table_name = opts.db_table
                     trans_table_alias = get_translation_table_alias(
-                        model._meta.db_table, language_id)
+                        model._meta.db_table, language_code)
                     new_table = (master_table_name + "__" + trans_table_alias)
                     self.where.add(constraint_tuple(new_table, field.column, field, lookup_type, value), connector)
                     return
@@ -294,24 +293,24 @@ class MultilingualQuery(Query):
             if hasattr(opts, 'translation_model'):
                 translation_opts = opts.translation_model._meta
                 if model == opts.translation_model:
-                    language_id = translation_opts.translated_fields[name][1]
-                    if language_id is None:
-                        language_id = get_default_language()
+                    language_code = translation_opts.translated_fields[name][1]
+                    if language_code is None:
+                        language_code = get_default_language()
                     #TODO: check alias
                     master_table_name = opts.db_table
                     trans_table_alias = get_translation_table_alias(
-                        model._meta.db_table, language_id)
+                        model._meta.db_table, language_code)
                     new_table = (master_table_name + "__" + trans_table_alias)
                     qn = self.get_compiler(DEFAULT_DB_ALIAS).quote_name_unless_alias
                     qn2 = self.get_compiler(DEFAULT_DB_ALIAS).connection.ops.quote_name
-                    trans_join = ('LEFT JOIN %s AS %s ON ((%s.master_id = %s.%s) AND (%s.language_id = %s))'
+                    trans_join = ('LEFT JOIN %s AS %s ON ((%s.master_id = %s.%s) AND (%s.language_code = %s))'
                                  % (qn2(model._meta.db_table),
                                  qn2(new_table),
                                  qn2(new_table),
                                  qn(master_table_name),
                                  qn2(model._meta.pk.column),
                                  qn2(new_table),
-                                 language_id))
+                                 language_code))
                     self.extra_join[new_table] = trans_join
                     target = field
                     continue
@@ -498,13 +497,13 @@ class MultilingualModelQuerySet(QuerySet):
         query = query or MultilingualQuery(model)
         super(MultilingualModelQuerySet, self).__init__(model, query, using)
 
-    def for_language(self, language_id_or_code):
+    def for_language(self, language_code):
         """
         Set the default language for all objects returned with this
         query.
         """
         clone = self._clone()
-        clone._default_language = get_language_id_from_id_or_code(language_id_or_code)
+        clone._default_language = language_code
         return clone
 
     def iterator(self):
@@ -512,7 +511,6 @@ class MultilingualModelQuerySet(QuerySet):
         Add the default language information to all returned objects.
         """
         default_language = getattr(self, '_default_language', None)
-
         for obj in super(MultilingualModelQuerySet, self).iterator():
             obj._default_language = default_language
             yield obj
@@ -537,11 +535,11 @@ class MultilingualModelQuerySet(QuerySet):
                     field_name = field_name[1:]
                 field_and_lang = trans_opts.translated_fields.get(field_name)
                 if field_and_lang:
-                    field, language_id = field_and_lang
-                    if language_id is None:
-                        language_id = getattr(self, '_default_language', None)
+                    field, language_code = field_and_lang
+                    if language_code is None:
+                        language_code = getattr(self, '_default_language', None)
                     real_name = get_translated_field_alias(field.attname,
-                                                           language_id)
+                                                           language_code)
                     new_field_names.append(prefix + real_name)
                 else:
                     new_field_names.append(prefix + field_name)

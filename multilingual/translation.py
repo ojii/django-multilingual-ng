@@ -47,9 +47,9 @@ def fill_translation_cache(instance):
         return
 
     instance._translation_cache = {}
-    for language_id in get_language_id_list():
-        # see if translation for language_id was in the query
-        field_alias = get_translated_field_alias('id', language_id)
+    for language_code in get_language_code_list():
+        # see if translation for language_code was in the query
+        field_alias = get_translated_field_alias('code', language_code)
         if getattr(instance, field_alias, None) is not None:
             field_names = [f.attname for f in instance._meta.translation_model._meta.fields]
 
@@ -57,10 +57,10 @@ def fill_translation_cache(instance):
             field_data = {}
             for fname in field_names:
                 field_data[fname] = getattr(instance,
-                                            get_translated_field_alias(fname, language_id))
+                                            get_translated_field_alias(fname, language_code))
 
             translation = instance._meta.translation_model(**field_data)
-            instance._translation_cache[language_id] = translation
+            instance._translation_cache[language_code] = translation
 
     # In some situations an (existing in the DB) object is loaded
     # without using the normal QuerySet.  In such case fallback to
@@ -71,28 +71,28 @@ def fill_translation_cache(instance):
     # to live with this for the time being.
     if len(instance._translation_cache.keys()) == 0:
         for translation in instance.translations.all():
-            instance._translation_cache[translation.language_id] = translation
+            instance._translation_cache[translation.language_code] = translation
 
 class TranslatedFieldProxy(property):
-    def __init__(self, field_name, alias, field, language_id=None,
+    def __init__(self, field_name, alias, field, language_code=None,
                  fallback=False):
         self.field_name = field_name
         self.field = field
         self.admin_order_field = alias
-        self.language_id = language_id
+        self.language_code = language_code
         self.fallback = fallback
 
     def __get__(self, obj, objtype=None):
         if obj is None:
             return self
 
-        return getattr(obj, 'get_' + self.field_name)(self.language_id,
+        return getattr(obj, 'get_' + self.field_name)(self.language_code,
                                                       self.fallback)
 
     def __set__(self, obj, value):
-        language_id = self.language_id
+        language_code = self.language_code
 
-        return getattr(obj, 'set_' + self.field_name)(value, self.language_id)
+        return getattr(obj, 'set_' + self.field_name)(value, self.language_code)
 
     short_description = property(lambda self: self.field.short_description)
 
@@ -100,10 +100,10 @@ def getter_generator(field_name, short_description):
     """
     Generate get_'field name' method for field field_name.
     """
-    def get_translation_field(cls, language_id_or_code=None, fallback=False):
+    def get_translation_field(cls, language_code=None, fallback=False):
         try:
-            return getattr(cls.get_translation(language_id_or_code,
-                                                fallback=fallback),
+            return getattr(cls.get_translation(language_code,
+                                               fallback=fallback),
                            field_name)
         except TranslationDoesNotExist:
             return None
@@ -114,13 +114,13 @@ def setter_generator(field_name):
     """
     Generate set_'field name' method for field field_name.
     """
-    def set_translation_field(cls, value, language_id_or_code=None):
-        setattr(cls.get_translation(language_id_or_code, True),
+    def set_translation_field(cls, value, language_code=None):
+        setattr(cls.get_translation(language_code, True),
                 field_name, value)
     set_translation_field.short_description = "set " + field_name
     return set_translation_field
 
-def get_translation(cls, language_id_or_code, create_if_necessary=False,
+def get_translation(cls, language_code, create_if_necessary=False,
                     fallback=False):
     """
     Get a translation instance for the given `language_id_or_code`.
@@ -137,28 +137,27 @@ def get_translation(cls, language_id_or_code, create_if_necessary=False,
     # fill the cache if necessary
     cls.fill_translation_cache()
 
-    language_id = get_language_id_from_id_or_code(language_id_or_code, False)
-    if language_id is None:
-        language_id = getattr(cls, '_default_language', None)
-    if language_id is None:
-        language_id = get_default_language()
+    if language_code is None:
+        language_code = getattr(cls, '_default_language', None)
+    if language_code is None:
+        language_code = get_default_language()
 
-    if language_id in cls._translation_cache:
-        return cls._translation_cache.get(language_id, None)
+    if language_code in cls._translation_cache:
+        return cls._translation_cache.get(language_code, None)
 
     if create_if_necessary:
         # case 1
         new_translation = cls._meta.translation_model(master=cls,
-                                                      language_id=language_id)
-        cls._translation_cache[language_id] = new_translation
+                                                      language_code=language_code)
+        cls._translation_cache[language_code] = new_translation
         return new_translation
     else:
         # case 2
-        for fb_lang_id in get_fallbacks(language_id):
-            trans = cls._translation_cache.get(fb_lang_id, None)
+        for fb_lang_code in get_fallbacks(language_code):
+            trans = cls._translation_cache.get(fb_lang_code, None)
             if trans:
                 return trans
-        raise TranslationDoesNotExist(language_id)
+        raise TranslationDoesNotExist(language_code)
 
 class Translation:
     """
@@ -184,7 +183,7 @@ class Translation:
 
     def create_translation_attrs(cls, main_cls):
         """
-        Creates get_'field name'(language_id) and set_'field
+        Creates get_'field name'(language_code) and set_'field
         name'(language_id) methods for all the translation fields.
         Adds the 'field name' properties too.
 
@@ -215,17 +214,16 @@ class Translation:
                         TranslatedFieldProxy(fname, fname, field, fallback=True))
 
                 # create the 'fname'_'language_code' proxy properties
-                for language_id in get_language_id_list():
-                    language_code = get_language_code(language_id)
+                for language_code in get_language_code_list():
                     fname_lng = fname + '_' + language_code.replace('-', '_')
-                    translated_fields[fname_lng] = (field, language_id)
+                    translated_fields[fname_lng] = (field, language_code)
                     setattr(main_cls, fname_lng,
                             TranslatedFieldProxy(fname, fname_lng, field,
-                                                 language_id))
+                                                 language_code))
                     # add the 'fname'_'language_code'_any fallback proxy
                     setattr(main_cls, fname_lng + FALLBACK_FIELD_SUFFIX,
                             TranslatedFieldProxy(fname, fname_lng, field,
-                                                 language_id, fallback=True))
+                                                 language_code, fallback=True))
 
         return translated_fields
     create_translation_attrs = classmethod(create_translation_attrs)
@@ -262,9 +260,9 @@ class Translation:
         translation_model_name = main_cls.__name__ + "Translation"
 
         # create the model with all the translatable fields
-        unique = [('language_id', 'master')]
+        unique = [('language_code', 'master')]
         for f in cls.get_unique_fields():
-            unique.append(('language_id',f))
+            unique.append(('language_code',f))
 
         class TransMeta:
             pass
@@ -274,7 +272,7 @@ class Translation:
         except AttributeError:
             meta = TransMeta
 
-        meta.ordering = ('language_id',)
+        meta.ordering = ('language_code',)
         meta.unique_together = tuple(unique)
         meta.app_label = main_cls._meta.app_label
         if not hasattr(meta, 'db_table'):
@@ -282,17 +280,23 @@ class Translation:
 
         trans_attrs = cls.__dict__.copy()
         trans_attrs['Meta'] = meta
+        trans_attrs['language_code'] = models.CharField(max_length=5, blank=True,
+                                                        choices=get_language_choices(),
+                                                        db_index=True)
+        """
+        DEPRECATED!!!!!! We DONT use those silly integer languages!
         trans_attrs['language_id'] = models.IntegerField(blank=False, null=False,
                                                          choices=get_language_choices(),
                                                          db_index=True)
-
+        """
+        
         edit_inline = True
 
         trans_attrs['master'] = TranslationForeignKey(main_cls, blank=False, null=False,
                                                       related_name='translations',)
         trans_attrs['__str__'] = lambda self: ("%s object, language_code=%s"
                                                % (translation_model_name,
-                                                  get_language_code(self.language_id)))
+                                                  self.language_code))
 
         trans_model = ModelBase(translation_model_name, (models.Model,), trans_attrs)
         trans_model._meta.translated_fields = cls.create_translation_attrs(main_cls)

@@ -8,10 +8,9 @@ from django.db.models.sql.compiler import SQLCompiler
 
 from multilingual.languages import (
     get_translation_table_alias,
-    get_language_id_list,
+    get_language_code_list,
     get_default_language,
-    get_translated_field_alias,
-    get_language_id_from_id_or_code)
+    get_translated_field_alias)
 
 __ALL__ = ['MultilingualSQLCompiler']
 
@@ -34,17 +33,17 @@ class MultilingualSQLCompiler(SQLCompiler):
             master_table_name = opts.db_table
             translation_opts = opts.translation_model._meta
             trans_table_name = translation_opts.db_table
-            for language_id in get_language_id_list():
+            for language_code in get_language_code_list():
                 table_alias = get_translation_table_alias(trans_table_name,
-                                                          language_id)
-                trans_join = ('LEFT JOIN %s AS %s ON ((%s.master_id = %s.%s) AND (%s.language_id = %s))'
+                                                          language_code)
+                trans_join = ("LEFT JOIN %s AS %s ON ((%s.master_id = %s.%s) AND (%s.language_code = '%s'))"
                            % (qn2(translation_opts.db_table),
                            qn2(table_alias),
                            qn2(table_alias),
                            qn(master_table_name),
                            qn2(opts.pk.column),
                            qn2(table_alias),
-                           language_id))
+                           language_code))
                 self.query.extra_join[table_alias] = trans_join
 
     

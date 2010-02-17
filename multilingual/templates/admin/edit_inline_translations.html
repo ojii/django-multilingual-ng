@@ -2,7 +2,7 @@
 {% load multilingual_tags %}
 <fieldset class="module aligned">
    {% for fcw in bound_related_object.form_field_collection_wrappers %}
-      <h2>Language:&nbsp;{{ forloop.counter|language_name }}</h2>
+      <h2>Language:&nbsp;{{ forloop.counter|language_for_id|language_name }}</h2>
       {% if bound_related_object.show_url %}{% if fcw.obj.original %}
       <p><a href="/r/{{ fcw.obj.original.content_type_id }}/{{ fcw.obj.original.id }}/">View on site</a></p>
       {% endif %}{% endif %}
@@ -10,8 +10,8 @@
          {% if bound_field.hidden %}
             {% field_widget bound_field %}
          {% else %}
-            {% ifequal bound_field.field.name "language_id" %}
-               <input type="hidden" name="{{ bound_field.form_fields.0.formfield.field_name }}" value="{{ forloop.parentloop.counter }}" />
+            {% ifequal bound_field.field.name "language_code" %}
+               <input type="hidden" name="{{ bound_field.form_fields.0.formfield.field_name }}" value="{{ forloop.parentloop.counter|language_for_id }}" />
             {% else %}
                {% admin_field_line bound_field %}
             {% endifequal %}

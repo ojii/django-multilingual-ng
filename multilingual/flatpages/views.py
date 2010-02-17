@@ -33,7 +33,7 @@ def multilingual_flatpage(request, url):
         return redirect_to_login(request.path)
     # Serve the content in the language defined by the Django translation module
     # if possible else serve the default language.
-    f._default_language = multilingual.languages.get_language_id_from_id_or_code(get_language())
+    f._default_language = get_language()
     if f.template_name:
         t = loader.select_template((f.template_name, DEFAULT_TEMPLATE))
     else:

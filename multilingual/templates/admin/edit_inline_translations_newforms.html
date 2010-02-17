@@ -4,7 +4,7 @@
 {{ inline_admin_formset.formset.management_form }}
 {% for inline_admin_form in inline_admin_formset %}
 <div class="inline-related {% if forloop.last %}last-related{% endif %}">
-  <h2>Language:&nbsp;{{ forloop.counter|language_name }}
+  <h2>Language:&nbsp;{{ forloop.counter|language_for_id|language_name }}
       {% if inline_admin_formset.formset.deletable %}<span class="delete">{{ inline_admin_form.deletion_field.field }} {{ inline_admin_form.deletion_field.label_tag }}</span>{% endif %}
       </h2>
 

@@ -9,35 +9,30 @@ from django.template.loader import get_template, render_to_string
 from django.conf import settings
 from django.utils.html import escape
 from multilingual.languages import (
-    get_language_idx,
     get_default_language,
-    get_language_id_list,
-    get_language_code,
+    get_language_code_list,
     get_language_name,
-    get_language_bidi)
+    get_language_bidi,
+    get_language_idx)
 
 register = template.Library()
 
 
-def language_code(language_id):
+def language_name(language_code):
     """
-    Return the code of the language with id=language_id
+    Return the name of the language with id=language_code
     """
-    return get_language_code(language_id)
+    return get_language_name(language_code)
 
 
-def language_name(language_id):
+def language_bidi(language_code):
     """
-    Return the name of the language with id=language_id
+    Return whether the language with id=language_code is written right-to-left.
     """
-    return get_language_name(language_id)
+    return get_language_bidi(language_code)
 
-
-def language_bidi(language_id):
-    """
-    Return whether the language with id=language_id is written right-to-left.
-    """
-    return get_language_bidi(language_id)
+def language_for_id(language_id):
+    return get_language_idx(language_for_id)
 
 
 class EditTranslationNode(template.Node):
@@ -51,12 +46,12 @@ class EditTranslationNode(template.Node):
         model = form._meta.model
         trans_model = model._meta.translation_model
         if self.language:
-            language_id = self.language.resolve(context)
+            language_code = self.language.resolve(context)
         else:
-            language_id = get_default_language()
+            language_code = get_default_language()
         real_name = "%s.%s.%s.%s" % (self.form_name,
                                      trans_model._meta.object_name.lower(),
-                                     get_language_idx(language_id),
+                                     get_language_idx(language_code),
                                      self.field_name)
         return str(resolve_variable(real_name, context))
 
@@ -73,18 +68,18 @@ def do_edit_translation(parser, token):
     return EditTranslationNode(bits[1], bits[2], language)
 
 
-def reorder_translation_formset_by_language_id(inline_admin_form):
+def reorder_translation_formset_by_language_code(inline_admin_form):
     """
     Shuffle the forms in the formset of multilingual model in the
     order of their language_ids.
     """
     lang_to_form = dict([(form.form.initial['language_id'], form)
                          for form in inline_admin_form])
-    return [lang_to_form[language_id] for language_id in
-        get_language_id_list()]
+    return [lang_to_form[language_code] for language_code in
+        get_language_code_list()]
 
-register.filter(language_code)
+register.filter(language_for_id)
 register.filter(language_name)
 register.filter(language_bidi)
 register.tag('edit_translation', do_edit_translation)
-register.filter(reorder_translation_formset_by_language_id)
+register.filter(reorder_translation_formset_by_language_code)

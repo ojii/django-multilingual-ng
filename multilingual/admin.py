@@ -2,7 +2,6 @@
 
 Peter Cicman, Divio GmbH, 2008
 """
-from multilingual.languages import get_language_id_from_id_or_code
 from django.utils.text import capfirst, get_text_list
 from django.contrib.admin.util import flatten_fieldsets
 from django.http import HttpResponseRedirect
@@ -56,7 +55,7 @@ class MultilingualInlineFormSet(BaseInlineFormSet):
             else:
                 self._queryset = qs
             if hasattr(self, 'use_language'):
-                self._queryset  = qs.filter(translations__language_id=get_language_id_from_id_or_code(self.use_language))
+                self._queryset  = qs.filter(translations__language_code=self.use_language)
         return self._queryset
 
     def save_new(self, form, commit=True):
@@ -135,13 +134,13 @@ class MultilingualModelAdminForm(forms.ModelForm):
         form_errors = []
         
         for check in self.instance._meta.translation_model._meta.unique_together[:]:
-            lookup_kwargs = {'language_id': get_language_id_from_id_or_code(self.use_language)}
+            lookup_kwargs = {'language_code': self.use_language}
             for field_name in check:
                 #local_name = "%s_%s" % (field_name, self.use_language)
                 if self.cleaned_data.get(field_name) is not None:
                     lookup_kwargs[field_name] = self.cleaned_data.get(field_name) 
             
-            if len(check) == 2 and 'master' in check and 'language_id' in check:
+            if len(check) == 2 and 'master' in check and 'language_code' in check:
                 continue
                 
             qs = self.instance._meta.translation_model.objects.filter(**lookup_kwargs)
@@ -152,7 +151,7 @@ class MultilingualModelAdminForm(forms.ModelForm):
                 model_name = capfirst(self.instance._meta.verbose_name)
                 field_labels = []
                 for field_name in check:
-                    if field_name == "language_id":
+                    if field_name == "language_code":
                         field_labels.append(_("language"))
                     elif field_name == "master":
                         continue
@@ -226,7 +225,7 @@ class ModelAdmin(admin.ModelAdmin):
     def render_change_form(self, request, context, add=False, change=False, form_url='', obj=None):
         # add context variables
         context.update({
-            'current_language_index': get_language_id_from_id_or_code(self.use_language),
+            'current_language_index': self.use_language,
             'current_language_code': self.use_language
         })
         return super(ModelAdmin, self).render_change_form(request, context, add, change, form_url, obj)
