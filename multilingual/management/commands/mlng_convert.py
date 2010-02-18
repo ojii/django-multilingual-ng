@@ -26,7 +26,9 @@ class Command(AppCommand):
             if not is_multilingual_model(obj):
                 continue
             print 'altering model %s' % obj
-            db.add_column(obj._meta.translation_model._meta.db_table, 
+            table = obj._meta.translation_model._meta.db_table
+            db.debug = True
+            db.add_column(table, 
                 'language_code',
                 models.CharField(max_length=5, blank=True,
                     choices=get_language_choices(), db_index=True)
@@ -35,9 +37,13 @@ class Command(AppCommand):
             # This is TERRIBLE for performance, but whatever...
             print 'migrating data'
             tempfield = models.IntegerField(blank=False, null=False,
-                choices=get_language_choices(), db_index=True)
+                choices=get_language_choices(), db_index=False)
             tempfield.contribute_to_class(obj._meta.translation_model, 'language_id')
             for row in obj.objects.all():
                 for translation in row.translations.all():
                     translation.language_code = get_code_by_id(translation.language_id)
                     translation.save()
+            db.create_index(table, ['language_code', 'master_id'])
+            print 'deleting language_id column'
+            db.delete_unique(table, ['language_id', 'master_id'])
+            db.delete_column(table, 'language_id')
