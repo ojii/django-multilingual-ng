@@ -4,7 +4,7 @@ version = __import__('multilingual').__version__
 
 setup(
     name = 'django-multilingual-ng',
-    version = '1.0.0b1',
+    version = version,
     description = 'Multilingual extension for Django - NG',
     author = 'Jonas Obrist',
     url = 'http://github.com/ojii/django-multilingual-ng',
