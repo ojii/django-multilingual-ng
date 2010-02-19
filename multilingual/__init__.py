@@ -3,8 +3,8 @@ Django-multilingual-ng: multilingual model support for Django 1.2.
 """
 import warnings
 
-VERSION = (0,1,0,'b3')
-__version__ = '0.1.0b3'
+VERSION = (0,1,0,'b4')
+__version__ = '0.1.0b4'
 
 try:
     from multilingual import models
