@@ -30,18 +30,19 @@ class Command(AppCommand):
     def handle(self, *args, **kwargs):
         if self.are_you_sure():
             super(Command, self).handle(*args, **kwargs)
-            print ("If your apps use south, please run startmigration and a "
-                   "fake migration for the apps you just converted.")
+            print self.style.NOTICE("If your apps use south, please run "
+                "startmigration and a fake migration for the apps you just "
+                "converted, unless you used the --south argument to this command")
         else:
-            print 'Aborted.'
+            print self.style.NOTICE('Aborted.')
         
     def are_you_sure(self):
-        print """
+        print self.style.NOTICE("""
 WARNING! This command will DELETE data from your database! All language_id 
 columns in all multilingual tables of the apps you specified will be deleted.
 Their values will be converted to the new language_code format. Please make a
 backup of your database before running this command.
-       """
+       """)
         answer = raw_input("Are you sure you want to continue? [yes/no]\n")
         if answer.lower() == 'yes':
             return True
