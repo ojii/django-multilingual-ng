@@ -16,6 +16,33 @@ class Command(AppCommand):
     """
     Migrate the data from an id base translation table to a code based table.
     """
+    def handle(self, *args, **kwargs):
+        if self.are_you_sure():
+            super(Command, self).handle(*args, **kwargs)
+            print ("If your apps use south, please run startmigration and a "
+                   "fake migration for the apps you just converted.")
+        else:
+            print 'Aborted.'
+        
+    def are_you_sure(self):
+        print """
+WARNING! This command will DELETE data from your database! All language_id 
+columns in all multilingual tables of the apps you specified will be deleted.
+Their values will be converted to the new language_code format. Please make a
+backup of your database before running this command.
+       """
+        answer = raw_input("Are you sure you want to continue? [yes/no]\n")
+        if answer.lower() == 'yes':
+            return True
+        elif answer.lower() == 'no':
+            return False
+        while True:
+            answer = raw_input("Please answer with either 'yes' or 'no'\n")
+            if answer.lower() == 'yes':
+                return True
+            elif answer.lower() == 'no':
+                return False
+        
     def handle_app(self, app, **options):
         print 'handling app %s' % app.__name__
         for obj in [getattr(app, name) for name in dir(app)]:
