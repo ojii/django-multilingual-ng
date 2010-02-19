@@ -141,6 +141,10 @@ def get_translation(cls, language_code, create_if_necessary=False,
         language_code = getattr(cls, '_default_language', None)
     if language_code is None:
         language_code = get_default_language()
+        
+    force_language = cls._meta.force_language
+    if force_language is not None:
+        language_code = force_language
 
     if language_code in cls._translation_cache:
         return cls._translation_cache.get(language_code, None)
@@ -151,13 +155,13 @@ def get_translation(cls, language_code, create_if_necessary=False,
                                                       language_code=language_code)
         cls._translation_cache[language_code] = new_translation
         return new_translation
-    else:
+    elif force_language is not None:
         # case 2
         for fb_lang_code in get_fallbacks(language_code):
             trans = cls._translation_cache.get(fb_lang_code, None)
             if trans:
                 return trans
-        raise TranslationDoesNotExist(language_code)
+    raise TranslationDoesNotExist(language_code)
 
 class Translation:
     """
@@ -313,6 +317,7 @@ class Translation:
                                                       main_cls._meta.__class__)
 
         main_cls._meta.translation_model = trans_model
+        main_cls._meta.force_language = None
         main_cls.Translation = trans_model
         main_cls.get_translation = get_translation
         main_cls.fill_translation_cache = fill_translation_cache

@@ -39,25 +39,21 @@ class MultilungualInlineModelForm(forms.ModelForm):
 
 class MultilingualInlineFormSet(BaseInlineFormSet):
     def get_queryset(self):
-        if not hasattr(self, '_queryset'):
-            if self.queryset is not None:
-                qs = self.queryset
-            else:
-                qs = self.model._default_manager.get_query_set()
+        if self.queryset is not None:
+            qs = self.queryset
+        else:
+            qs = self.model._default_manager.get_query_set()
 
-            # If the queryset isn't already ordered we need to add an
-            # artificial ordering here to make sure that all formsets
-            # constructed from this queryset have the same form order.
-            if not qs.ordered:
-                qs = qs.order_by(self.model._meta.pk.name)
+        if not qs.ordered:
+            qs = qs.order_by(self.model._meta.pk.name)
 
-            if self.max_num > 0:
-                self._queryset = qs[:self.max_num]
-            else:
-                self._queryset = qs
-            if hasattr(self, 'use_language'):
-                self._queryset  = qs.filter(translations__language_code=self.use_language)
-        return self._queryset
+        if self.max_num > 0:
+            _queryset = qs[:self.max_num]
+        else:
+            _queryset = qs
+        if hasattr(self, 'use_language'):
+            _queryset  = qs.filter(translations__language_code=self.use_language)
+        return _queryset
 
     def save_new(self, form, commit=True):
         """NOTE: save_new method is completely overridden here, there's no
@@ -192,6 +188,8 @@ class ModelAdmin(admin.ModelAdmin):
     
     use_language = None
     
+    fill_check_field = None
+    
     def __init__(self, model, admin_site):
         if hasattr(self, 'use_fieldsets'):
             # go around admin fieldset structure validation
@@ -201,10 +199,19 @@ class ModelAdmin(admin.ModelAdmin):
             self.prepopulated_fields = self.use_prepopulated_fields
         super(ModelAdmin, self).__init__(model, admin_site)
     
-    
+    def get_fill_check_field(self):
+        if self.fill_check_field is None:
+            opts = self.model._meta.translation_model._meta
+            for field in opts.fields:
+                if field.attname in ('language_code', 'master_id'):
+                    continue
+                if not (field.blank or field.null):
+                    self.fill_check_field = field.attname
+                    break
+        return self.fill_check_field
     
     def get_form(self, request, obj=None, **kwargs):    
-        self.use_language = request.GET.get('lang', request.GET.get('language', settings.LANGUAGES[settings.DEFAULT_LANGUAGE][0]))
+        self.use_language = request.GET.get('lang', request.GET.get('language', get_default_language()))
         # assign language to inlines, so they now how to render
         for inline in self.inline_instances:
             if isinstance(inline, MultilingualInlineAdmin):
@@ -225,11 +232,19 @@ class ModelAdmin(admin.ModelAdmin):
     
     def render_change_form(self, request, context, add=False, change=False, form_url='', obj=None):
         # add context variables
+        filled_languages = []
+        fill_check_field = self.get_fill_check_field()
+        if obj and fill_check_field is not None:
+            filled_languages = [t[0] for t in obj.translations.filter(**{'%s__isnull' % fill_check_field:False}).values_list('language_code')]
         context.update({
             'current_language_index': self.use_language,
-            'current_language_code': self.use_language
+            'current_language_code': self.use_language,
+            'filled_languages': filled_languages,
         })
-        return super(ModelAdmin, self).render_change_form(request, context, add, change, form_url, obj)
+        obj._meta.force_language = self.use_language
+        resp = super(ModelAdmin, self).render_change_form(request, context, add, change, form_url, obj)
+        obj._meta.force_language = None
+        return resp
     
                 
     def response_change(self, request, obj):

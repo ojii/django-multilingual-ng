@@ -49,6 +49,10 @@ $(document).ready(function(){
     color:#fff;
     background:#bcd2e9 !important;
 }
+
+.notfilled{
+    color: #808080 !important;
+}
 </style>
 
 
@@ -69,7 +73,7 @@ $(document).ready(function(){
 <div id="page_form_lang_tabs">
 	{% for code,name in LANGUAGE_CODES_AND_NAMES %}
         <input type="button" onclick="trigger_lang_button(this,'./?language={{ code }}');"
-            class="language_button {% ifequal code current_language_code %}selected{% endifequal %}"
+            class="language_button{% if not code in filled_languages %} notfilled{% endif %}{% if code == current_language_code %} selected{% endif %}"
             name="{{ code }}" value="{{ name }}" /> 
     {% endfor %}
 </div>
