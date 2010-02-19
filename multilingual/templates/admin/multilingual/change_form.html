@@ -7,8 +7,29 @@
 <script type=text/javascript>
 function trigger_lang_button(e, url)
 {
-    window.location = url;
+    if (MULTILINGUAL_NG_FORM_CHANGED)
+    {
+		var question = gettext("Are you want to switch to another language before saving this one?");
+		var answer = confirm(question);
+	}
+	else
+	{
+		var answer = true;
+	}
+
+    if (answer)
+    {
+        window.location.href = url;
+    }
 }
+
+var MULTILINGUAL_NG_FORM_CHANGED = false;
+
+$(document).ready(function(){
+     jQuery('input').change(function(){
+         MULTILINGUAL_NG_FORM_CHANGED=true;
+     });
+});
 </script>
 
 <style type="text/css">

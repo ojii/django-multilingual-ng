@@ -15,6 +15,7 @@ from django.contrib import admin
 from django.forms.util import ErrorList, ValidationError
 from django.forms.models import BaseInlineFormSet, ModelFormMetaclass
 from django.utils.translation import ugettext as _
+from multilingual.languages import get_default_language
 
 MULTILINGUAL_PREFIX = '_ml__trans_'
 MULTILINGUAL_INLINE_PREFIX = '_ml__inline_trans_'
@@ -237,9 +238,9 @@ class ModelAdmin(admin.ModelAdmin):
             opts = obj._meta
             msg = _('The %(name)s "%(obj)s" was changed successfully.') % {'name': force_unicode(opts.verbose_name), 'obj': force_unicode(obj)}
             self.message_user(request, msg + ' ' + _("You may edit it again below."))
-            lang, path = request.GET.get('lang', None), request.path
+            lang, path = request.GET.get('language', get_default_language()), request.path
             if lang:
-                lang = "lang=%s" % lang
+                lang = "language=%s" % lang
             if request.REQUEST.has_key('_popup'):
                 path += "?_popup=1" + "&%s" % lang
             else:
