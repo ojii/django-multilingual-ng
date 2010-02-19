@@ -241,9 +241,11 @@ class ModelAdmin(admin.ModelAdmin):
             'current_language_code': self.use_language,
             'filled_languages': filled_languages,
         })
-        obj._meta.force_language = self.use_language
+        if obj:
+            obj._meta.force_language = self.use_language
         resp = super(ModelAdmin, self).render_change_form(request, context, add, change, form_url, obj)
-        obj._meta.force_language = None
+        if obj:
+            obj._meta.force_language = None
         return resp
     
                 

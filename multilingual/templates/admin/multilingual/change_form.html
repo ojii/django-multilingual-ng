@@ -9,7 +9,7 @@ function trigger_lang_button(e, url)
 {
     if (MULTILINGUAL_NG_FORM_CHANGED)
     {
-		var question = gettext("Are you want to switch to another language before saving this one?");
+		var question = gettext("Are you sure you want to change tabs without saving the page first?");
 		var answer = confirm(question);
 	}
 	else
@@ -73,7 +73,7 @@ $(document).ready(function(){
 <div id="page_form_lang_tabs">
 	{% for code,name in LANGUAGE_CODES_AND_NAMES %}
         <input type="button" onclick="trigger_lang_button(this,'./?language={{ code }}');"
-            class="language_button{% if not code in filled_languages %} notfilled{% endif %}{% if code == current_language_code %} selected{% endif %}"
+            class="language_button{% if code == current_language_code %} selected{% else %}{% if not code in filled_languages %} notfilled{% endif %}{% endif %}"
             name="{{ code }}" value="{{ name }}" /> 
     {% endfor %}
 </div>
