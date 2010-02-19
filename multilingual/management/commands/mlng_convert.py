@@ -2,11 +2,14 @@ from django.core.management.base import AppCommand
 from django.db import models
 from django.utils.importlib import import_module
 from django.conf import settings
+from django.db import connection
+from django.core.management import call_command
 from multilingual.utils import is_multilingual_model
 from multilingual.languages import get_language_choices
 from inspect import isclass
 from south.db import db
-from django.db import connection
+from south.migration import get_app
+from optparse import make_option
 
 
 def get_code_by_id(lid):
@@ -16,6 +19,14 @@ class Command(AppCommand):
     """
     Migrate the data from an id base translation table to a code based table.
     """
+    
+    extra_option_list = (
+        make_option('-s', '--south', action='store_true', dest='south',
+            default=False,
+            help='Automatically generate south migrations and fake them for apps using south.'),
+    )
+    option_list = AppCommand.option_list + extra_option_list
+    
     def handle(self, *args, **kwargs):
         if self.are_you_sure():
             super(Command, self).handle(*args, **kwargs)
@@ -44,7 +55,8 @@ backup of your database before running this command.
                 return False
         
     def handle_app(self, app, **options):
-        print 'handling app %s' % app.__name__
+        appname = app.__name__
+        print 'handling app %s' % appname
         for obj in [getattr(app, name) for name in dir(app)]:
             if not isclass(obj):
                 continue
@@ -74,3 +86,7 @@ backup of your database before running this command.
             print 'deleting language_id column'
             db.delete_unique(table, ['language_id', 'master_id'])
             db.delete_column(table, 'language_id')
+        if options.get('south') and get_app(appname):
+            print 'generating south migrations and fake them'
+            call_command('startmigration %s mlng_conversion --auto' % appname)
+            call_command('migrate %s --fake' % appname)
