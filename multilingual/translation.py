@@ -155,7 +155,7 @@ def get_translation(cls, language_code, create_if_necessary=False,
                                                       language_code=language_code)
         cls._translation_cache[language_code] = new_translation
         return new_translation
-    elif force_language is not None:
+    elif force_language is None:
         # case 2
         for fb_lang_code in get_fallbacks(language_code):
             trans = cls._translation_cache.get(fb_lang_code, None)

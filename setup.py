@@ -10,7 +10,11 @@ setup(
     url = 'http://github.com/ojii/django-multilingual-ng',
     packages = find_packages(exclude=["testproject",]),
     zip_safe=False,
-    package_data = {
-        '': ['templates/*/*.html'],
+    package_data={
+        'multilingual': [
+            'templates/admin/*.html',
+            'templates/admin/multilingual/*.html',
+            'templates/admin/multilingual/edit_inline/*.html',
+        ],
     },
 )
