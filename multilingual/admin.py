@@ -12,6 +12,7 @@ from copy import deepcopy
 from django.conf import settings
 from django import forms
 from django.contrib import admin
+from django.db.models import Model
 from django.forms.util import ErrorList, ValidationError
 from django.forms.models import BaseInlineFormSet, ModelFormMetaclass
 from django.utils.translation import ugettext as _
@@ -20,21 +21,26 @@ from multilingual.languages import get_default_language
 MULTILINGUAL_PREFIX = '_ml__trans_'
 MULTILINGUAL_INLINE_PREFIX = '_ml__inline_trans_'
 
-class MultilungualInlineModelForm(forms.ModelForm):
+class MultilingualInlineModelForm(forms.ModelForm):
     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
                  initial=None, error_class=ErrorList, label_suffix=':',
                  empty_permitted=False, instance=None):
         """Just full up intitial values for ml fields
         """
-        super(MultilungualInlineModelForm, self).__init__(data, files, auto_id, prefix,
+        super(MultilingualInlineModelForm, self).__init__(data, files, auto_id, prefix,
                                                     initial, error_class, label_suffix,
                                                     empty_permitted, instance)
         
         # read data for existing object, and set them as initial
+        print self.initial
         for name, db_field in get_translated_fields(self.instance):
             full_name = '%s%s' % (MULTILINGUAL_INLINE_PREFIX, name)
             if full_name in self.fields:
-                self.fields[full_name].initial = getattr(self.instance, name, '')
+                value = getattr(self.instance, name, '')
+                # check for FK's etc
+                if isinstance(value, Model):
+                    value = value.pk
+                self.fields[full_name].initial = value 
 
 
 class MultilingualInlineFormSet(BaseInlineFormSet):
@@ -82,7 +88,7 @@ class MultilingualInlineFormSet(BaseInlineFormSet):
       
 class MultilingualInlineAdmin(admin.TabularInline):
     formset = MultilingualInlineFormSet
-    form = MultilungualInlineModelForm
+    form = MultilingualInlineModelForm
     
     template = 'admin/multilingual/edit_inline/tabular.html'
     
