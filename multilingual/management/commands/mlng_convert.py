@@ -8,8 +8,6 @@ from multilingual.utils import is_multilingual_model
 from multilingual.languages import get_language_choices
 from inspect import isclass
 from south.db import db
-from south.migration import get_app
-from optparse import make_option
 
 
 def get_code_by_id(lid):
@@ -18,15 +16,7 @@ def get_code_by_id(lid):
 class Command(AppCommand):
     """
     Migrate the data from an id base translation table to a code based table.
-    """
-    
-    extra_option_list = (
-        make_option('-s', '--south', action='store_true', dest='south',
-            default=False,
-            help='Automatically generate south migrations and fake them for apps using south.'),
-    )
-    option_list = AppCommand.option_list + extra_option_list
-    
+    """    
     def handle(self, *args, **kwargs):
         if self.are_you_sure():
             super(Command, self).handle(*args, **kwargs)
@@ -87,7 +77,3 @@ backup of your database before running this command.""")
             print 'deleting language_id column'
             db.delete_unique(table, ['language_id', 'master_id'])
             db.delete_column(table, 'language_id')
-        if options.get('south') and get_app(appname):
-            print 'generating south migrations and fake them'
-            call_command('startmigration %s mlng_conversion --auto' % appname)
-            call_command('migrate %s --fake' % appname)
