@@ -20,9 +20,7 @@ class Command(AppCommand):
     def handle(self, *args, **kwargs):
         if self.are_you_sure():
             super(Command, self).handle(*args, **kwargs)
-            print self.style.NOTICE("If your apps use south, please run "
-                "startmigration and a fake migration for the apps you just "
-                "converted, unless you used the --south argument to this command")
+            print self.style.HTTP_SUCCESS('Done.')
         else:
             print self.style.NOTICE('Aborted.')
         
