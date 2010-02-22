@@ -447,7 +447,7 @@ class MultilingualQuery(Query):
                     self.update_dupe_avoidance(dupe_opts, dupe_col, int_alias)
                 except NameError:
                     self.update_dupe_avoidance(dupe_opts, dupe_col, alias)
-
+        
         if pos != len(names) - 1:
             raise FieldError("Join on field %r not permitted." % name)
 

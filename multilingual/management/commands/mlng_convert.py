@@ -37,12 +37,12 @@ class Command(AppCommand):
             print self.style.NOTICE('Aborted.')
         
     def are_you_sure(self):
-        print self.style.NOTICE("""
-WARNING! This command will DELETE data from your database! All language_id 
+        n = self.style.NOTICE
+        e = self.style.ERROR
+        print e("WARNING!") + n(" This command will ") + e("delete") + n(""" data from your database! All language_id  
 columns in all multilingual tables of the apps you specified will be deleted.
 Their values will be converted to the new language_code format. Please make a
-backup of your database before running this command.
-       """)
+backup of your database before running this command.""")
         answer = raw_input("Are you sure you want to continue? [yes/no]\n")
         if answer.lower() == 'yes':
             return True
