@@ -32,14 +32,26 @@ class MultilingualInlineModelForm(forms.ModelForm):
                                                     empty_permitted, instance)
         
         # read data for existing object, and set them as initial
-        print self.initial
+        opts = self.instance._meta
+        localm2m = [m2m.attname for m2m in opts.local_many_to_many]
+        externalfk = [obj.field.related_query_name() for obj in opts.get_all_related_objects()]
+        externalm2m = [m2m.get_accessor_name() for m2m in opts.get_all_related_many_to_many_objects()]
         for name, db_field in get_translated_fields(self.instance):
             full_name = '%s%s' % (MULTILINGUAL_INLINE_PREFIX, name)
             if full_name in self.fields:
                 value = getattr(self.instance, name, '')
-                # check for FK's etc
+                # check for (local) ForeignKeys
                 if isinstance(value, Model):
                     value = value.pk
+                # check for (local) many to many fields
+                elif name in localm2m:
+                    value = value.all()
+                # check for (external) ForeignKeys
+                elif name in externalfk:
+                    value = value.all()
+                # check for (external) many to many fields
+                elif name in externalm2m:
+                    value = value.all()
                 self.fields[full_name].initial = value 
 
 
