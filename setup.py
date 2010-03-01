@@ -15,6 +15,8 @@ setup(
             'templates/admin/*.html',
             'templates/admin/multilingual/*.html',
             'templates/admin/multilingual/edit_inline/*.html',
+            'flatpages/templates/flatpages/*.html',
+            'media/multilingual/admin/css/style.css',
         ],
     },
 )
