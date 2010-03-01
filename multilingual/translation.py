@@ -133,7 +133,6 @@ def get_translation(cls, language_code, create_if_necessary=False,
     3. if all of the above fails to find a translation, raise the
     TranslationDoesNotExist exception
     """
-    fallback = True
     # fill the cache if necessary
     cls.fill_translation_cache()
 
@@ -155,7 +154,7 @@ def get_translation(cls, language_code, create_if_necessary=False,
                                                       language_code=language_code)
         cls._translation_cache[language_code] = new_translation
         return new_translation
-    elif force_language is None:
+    elif force_language is None and fallback:
         # case 2
         for fb_lang_code in get_fallbacks(language_code):
             trans = cls._translation_cache.get(fb_lang_code, None)
@@ -211,7 +210,7 @@ class Translation:
                 # add the 'fname' proxy property that allows reads
                 # from and writing to the appropriate translation
                 setattr(main_cls, fname,
-                        TranslatedFieldProxy(fname, fname, field))
+                        TranslatedFieldProxy(fname, fname, field, fallback=True))
 
                 # add the 'fname'_any fallback
                 setattr(main_cls, fname + FALLBACK_FIELD_SUFFIX,
