@@ -58,7 +58,7 @@ backup of your database before running this command.""")
             db.debug = True
             db.add_column(table, 
                 'language_code',
-                models.CharField(max_length=5, blank=True,
+                models.CharField(max_length=15, blank=True,
                     choices=get_language_choices(), db_index=True)
             )
             # migrate the model
