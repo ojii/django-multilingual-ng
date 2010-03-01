@@ -284,15 +284,10 @@ class Translation:
 
         trans_attrs = cls.__dict__.copy()
         trans_attrs['Meta'] = meta
+        # TODO: increase the length of this field, but to what???
         trans_attrs['language_code'] = models.CharField(max_length=5, blank=True,
                                                         choices=get_language_choices(),
                                                         db_index=True)
-        """
-        DEPRECATED!!!!!! We DONT use those silly integer languages!
-        trans_attrs['language_id'] = models.IntegerField(blank=False, null=False,
-                                                         choices=get_language_choices(),
-                                                         db_index=True)
-        """
         
         edit_inline = True
 

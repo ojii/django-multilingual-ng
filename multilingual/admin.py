@@ -195,7 +195,7 @@ class MultilingualModelAdminForm(forms.ModelForm):
 
 
 
-class ModelAdmin(admin.ModelAdmin):
+class MultilingualModelAdmin(admin.ModelAdmin):
     
     # use special template to render tabs for languages on top
     change_form_template = "admin/multilingual/change_form.html"
@@ -215,7 +215,7 @@ class ModelAdmin(admin.ModelAdmin):
         if hasattr(self, 'use_prepopulated_fields'):
             # go around admin fieldset structure validation
             self.prepopulated_fields = self.use_prepopulated_fields
-        super(ModelAdmin, self).__init__(model, admin_site)
+        super(MultilingualModelAdmin, self).__init__(model, admin_site)
     
     def get_fill_check_field(self):
         if self.fill_check_field is None:
@@ -235,7 +235,7 @@ class ModelAdmin(admin.ModelAdmin):
             if isinstance(inline, MultilingualInlineAdmin):
                 inline.use_language = self.use_language
         
-        Form = super(ModelAdmin, self).get_form(request, obj, **kwargs)
+        Form = super(MultilingualModelAdmin, self).get_form(request, obj, **kwargs)
         
         Form.ml_fields = {}
         for name, field in get_default_translated_fields(self.model):
@@ -261,7 +261,7 @@ class ModelAdmin(admin.ModelAdmin):
         })
         if obj:
             obj._meta.force_language = self.use_language
-        resp = super(ModelAdmin, self).render_change_form(request, context, add, change, form_url, obj)
+        resp = super(MultilingualModelAdmin, self).render_change_form(request, context, add, change, form_url, obj)
         if obj:
             obj._meta.force_language = None
         return resp
@@ -281,7 +281,7 @@ class ModelAdmin(admin.ModelAdmin):
             else:
                 path += "?%s" % lang
             return HttpResponseRedirect(path)
-        return super(ModelAdmin, self).response_change(request, obj)
+        return super(MultilingualModelAdmin, self).response_change(request, obj)
 
     
     class Media:

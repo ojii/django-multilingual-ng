@@ -13,8 +13,8 @@ try:
                                         get_language_code_list)
     from multilingual.settings import FALLBACK_LANGUAGES
     from multilingual.translation import Translation
-    from multilingual.admin import ModelAdmin, MultilingualInlineAdmin
+    from multilingual.admin import MultilingualModelAdmin, MultilingualInlineAdmin
     from multilingual.manager import Manager
-    MultilingualModelAdmin = ModelAdmin
+    ModelAdmin = MultilingualModelAdmin
 except ImportError:
     pass
