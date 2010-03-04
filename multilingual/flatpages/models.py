@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.sites.models import Site
 from django.utils.translation import ugettext_lazy as _
-import multilingual
+from multilingual.translation import Translation as TranslationBase
+from multilingual.exceptions import TranslationDoesNotExist
 
 
 class MultilingualFlatPage(models.Model):
@@ -14,7 +15,7 @@ class MultilingualFlatPage(models.Model):
     sites = models.ManyToManyField(Site)
 
     # And now the translatable fields
-    class Translation(multilingual.Translation):
+    class Translation(TranslationBase):
         """
         The definition of translation model.
 
@@ -40,7 +41,7 @@ class MultilingualFlatPage(models.Model):
         # note that you can use name and description fields as usual
         try:
             return u"%s -- %s" % (self.url, self.title)
-        except multilingual.TranslationDoesNotExist:
+        except TranslationDoesNotExist:
             return u"-not-available-"
 
     def get_absolute_url(self):

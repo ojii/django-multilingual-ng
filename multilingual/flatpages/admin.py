@@ -2,10 +2,10 @@ from django import forms
 from django.contrib import admin
 from multilingual.flatpages.models import MultilingualFlatPage
 from django.utils.translation import ugettext_lazy as _
-import multilingual
+import multilingual.admin import MultilingualModelAdmin, MultilingualModelAdminForm
 
 
-class MultilingualFlatpageForm(forms.ModelForm):
+class MultilingualFlatpageForm(MultilingualModelAdminForm):
     url = forms.RegexField(label=_("URL"), max_length=100, regex=r'^[-\w/]+$',
         help_text = _("Example: '/about/contact/'. Make sure to have leading"
                       " and trailing slashes."),
@@ -16,7 +16,7 @@ class MultilingualFlatpageForm(forms.ModelForm):
         model = MultilingualFlatPage
 
 
-class MultilingualFlatPageAdmin(multilingual.ModelAdmin):
+class MultilingualFlatPageAdmin(MultilingualModelAdmin):
     form = MultilingualFlatpageForm
     fieldsets = (
         (None, {'fields': ('url', 'sites')}),

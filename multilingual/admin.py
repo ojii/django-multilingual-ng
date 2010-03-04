@@ -16,6 +16,8 @@ from django.db.models import Model
 from django.forms.util import ErrorList, ValidationError
 from django.forms.models import BaseInlineFormSet, ModelFormMetaclass
 from django.utils.translation import ugettext as _
+from django.template.loader import find_template
+from django.template import TemplateDoesNotExist
 from multilingual.languages import get_default_language
 
 MULTILINGUAL_PREFIX = '_ml__trans_'
@@ -258,6 +260,7 @@ class MultilingualModelAdmin(admin.ModelAdmin):
             'current_language_index': self.use_language,
             'current_language_code': self.use_language,
             'filled_languages': filled_languages,
+            'old_template': self.get_old_template(),
         })
         if obj:
             obj._meta.force_language = self.use_language
@@ -265,6 +268,22 @@ class MultilingualModelAdmin(admin.ModelAdmin):
         if obj:
             obj._meta.force_language = None
         return resp
+    
+    
+    def get_old_template(self):
+        opts = self.model._meta
+        app_label = opts.app_label
+        search_templates = [
+            "admin/%s/%s/change_form.html" % (app_label, opts.object_name.lower()),
+            "admin/%s/change_form.html" % app_label,
+            "admin/change_form.html"
+        ]
+        for template in search_templates:
+            try:
+                find_template(template)
+                return template
+            except TemplateDoesNotExist:
+                pass
     
                 
     def response_change(self, request, obj):
