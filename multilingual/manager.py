@@ -4,7 +4,7 @@ from multilingual.query import MultilingualModelQuerySet
 from multilingual.languages import *
 
 
-class Manager(models.Manager):
+class MultilingualManager(models.Manager):
     """
     A manager for multilingual models.
 
@@ -15,3 +15,4 @@ class Manager(models.Manager):
 
     def get_query_set(self):
         return MultilingualModelQuerySet(self.model)
+Manager = MultilingualManager # backwards compat, will be depricated

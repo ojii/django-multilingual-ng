@@ -2,7 +2,7 @@ from django import forms
 from django.contrib import admin
 from multilingual.flatpages.models import MultilingualFlatPage
 from django.utils.translation import ugettext_lazy as _
-import multilingual.admin import MultilingualModelAdmin, MultilingualModelAdminForm
+from multilingual.admin import MultilingualModelAdmin, MultilingualModelAdminForm
 
 
 class MultilingualFlatpageForm(MultilingualModelAdminForm):
@@ -18,7 +18,7 @@ class MultilingualFlatpageForm(MultilingualModelAdminForm):
 
 class MultilingualFlatPageAdmin(MultilingualModelAdmin):
     form = MultilingualFlatpageForm
-    fieldsets = (
+    use_fieldsets = (
         (None, {'fields': ('url', 'sites')}),
         (_('Advanced options'), {'classes': ('collapse',), 'fields': ('enable_comments', 'registration_required', 'template_name')}),
     )
