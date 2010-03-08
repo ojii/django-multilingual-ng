@@ -1,12 +1,17 @@
 """
 Django-multilingual-ng: multilingual model support for Django 1.2.
-"""
-import warnings
 
-VERSION = (0,1,0,'b15')
-__version__ = '0.1.0b15'
+Note about version numbers:
+    - uneven minor versions are considered unstable releases
+    - even minor versions are considered stable releases
+"""
+VERSION = (0, 1, 15)
+__version__ = '.'.join(VERSION)
 
 try:
+    """
+    WARNING: All these names imported here WILL BE DEPRECATED!
+    """
     from multilingual import models
     from multilingual.exceptions import TranslationDoesNotExist, LanguageDoesNotExist
     from multilingual.languages import (set_default_language, get_default_language,

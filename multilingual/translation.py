@@ -169,7 +169,7 @@ def get_translation(cls, language_code, create_if_necessary=False,
                 return trans
     raise TranslationDoesNotExist(language_code)
 
-class Translation:
+class TranslationModel(object):
     """
     A superclass for translatablemodel.Translation inner classes.
     """
@@ -330,6 +330,8 @@ class Translation:
 #                sender=main_cls)
 
     finish_multilingual_class = classmethod(finish_multilingual_class)
+# The following will be deprecated:
+Translation = TranslationModel
 
 def install_translation_library():
     # modify ModelBase.__new__ so that it understands how to handle the
