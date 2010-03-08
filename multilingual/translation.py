@@ -12,6 +12,7 @@ from multilingual.languages import *
 from multilingual.exceptions import TranslationDoesNotExist
 from multilingual.fields import TranslationForeignKey
 from multilingual import manager
+from multilingual.utils import GLL
 # To Be Depricated
 #from multilingual.utils import install_multilingual_modeladmin_new
 
@@ -142,8 +143,14 @@ def get_translation(cls, language_code, create_if_necessary=False,
         language_code = get_default_language()
         
     force_language = cls._meta.force_language
+    force = False
     if force_language is not None:
         language_code = force_language
+        force = True
+        
+    if GLL.is_active:
+        language_code = GLL.language_code
+        force = True
 
     if language_code in cls._translation_cache:
         return cls._translation_cache.get(language_code, None)
@@ -154,7 +161,7 @@ def get_translation(cls, language_code, create_if_necessary=False,
                                                       language_code=language_code)
         cls._translation_cache[language_code] = new_translation
         return new_translation
-    elif force_language is None and fallback:
+    elif (not force) and fallback:
         # case 2
         for fb_lang_code in get_fallbacks(language_code):
             trans = cls._translation_cache.get(fb_lang_code, None)
@@ -268,7 +275,7 @@ class Translation:
             unique.append(('language_code',f))
 
         class TransMeta:
-            pass
+            related_name = 'translations'
 
         try:
             meta = cls.Meta
@@ -291,7 +298,7 @@ class Translation:
         edit_inline = True
 
         trans_attrs['master'] = TranslationForeignKey(main_cls, blank=False, null=False,
-                                                      related_name='translations',)
+                                                      related_name=meta.related_name,)
         trans_attrs['__str__'] = lambda self: ("%s object, language_code=%s"
                                                % (translation_model_name,
                                                   self.language_code))

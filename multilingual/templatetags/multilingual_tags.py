@@ -13,7 +13,9 @@ from multilingual.languages import (
     get_language_code_list,
     get_language_name,
     get_language_bidi,
-    get_language_idx)
+    get_language_idx
+)
+from multilingual.utils import GLL
 
 register = template.Library()
 
@@ -77,9 +79,31 @@ def reorder_translation_formset_by_language_code(inline_admin_form):
                          for form in inline_admin_form])
     return [lang_to_form[language_code] for language_code in
         get_language_code_list()]
+    
+class ForceLanguageNode(template.Node):
+    def __init__(self, language_code, nodelist):
+        self.language_code = language_code
+        self.nodelist = nodelist
+    
+    def render(self, context):
+        if self.language_code[0] == self.language_code[-1] and self.language_code[0] in ('"',"'"):
+            language_code = self.language_code[1:-1]
+        else:
+            language_code = template.Variable(self.language_code).resolve(context) 
+        GLL.lock(language_code)
+        output = self.nodelist.render(context)
+        GLL.release()
+        return output
+    
+def force_language(parser, token):
+    tag_name, language_code = token.split_contents()
+    nodelist = parser.parse(('endforcelanguage',))
+    parser.delete_first_token()
+    return ForceLanguageNode(language_code, nodelist)
 
 register.filter(language_for_id)
 register.filter(language_name)
 register.filter(language_bidi)
 register.tag('edit_translation', do_edit_translation)
 register.filter(reorder_translation_formset_by_language_code)
+register.tag('forcelanguage', force_language)
