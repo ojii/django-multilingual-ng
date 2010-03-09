@@ -275,7 +275,7 @@ class TranslationModel(object):
             unique.append(('language_code',f))
 
         class TransMeta:
-            related_name = 'translations'
+            pass
 
         try:
             meta = cls.Meta
@@ -295,16 +295,21 @@ class TranslationModel(object):
                                                         choices=get_language_choices(),
                                                         db_index=True)
         
+        related_name = getattr(meta, 'related_name', 'translations')
+        if hasattr(meta, 'related_name'):
+            delattr(meta, 'related_name')
+        
         edit_inline = True
 
         trans_attrs['master'] = TranslationForeignKey(main_cls, blank=False, null=False,
-                                                      related_name=meta.related_name,)
+                                                      related_name=related_name,)
         trans_attrs['__str__'] = lambda self: ("%s object, language_code=%s"
                                                % (translation_model_name,
                                                   self.language_code))
 
         trans_model = ModelBase(translation_model_name, (models.Model,), trans_attrs)
         trans_model._meta.translated_fields = cls.create_translation_attrs(main_cls)
+        trans_model._meta.related_name = related_name
 
         _old_init_name_map = main_cls._meta.__class__.init_name_map
         def init_name_map(self):
