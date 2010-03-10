@@ -5,7 +5,7 @@ Note about version numbers:
     - uneven minor versions are considered unstable releases
     - even minor versions are considered stable releases
 """
-VERSION = ('0', '1', '17', '1')
+VERSION = ('0', '1', '17', '2')
 __version__ = '.'.join(VERSION)
 
 try:

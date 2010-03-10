@@ -23,6 +23,29 @@ from multilingual.languages import get_default_language
 MULTILINGUAL_PREFIX = '_ml__trans_'
 MULTILINGUAL_INLINE_PREFIX = '_ml__inline_trans_'
 
+def relation_hack(form, fields, prefix=''):
+    opts = form.instance._meta
+    localm2m = [m2m.attname for m2m in opts.local_many_to_many]
+    externalfk = [obj.field.related_query_name() for obj in opts.get_all_related_objects()]
+    externalm2m = [m2m.get_accessor_name() for m2m in opts.get_all_related_many_to_many_objects()]
+    for name, db_field in fields:
+        full_name = '%s%s' % (prefix, name)
+        if full_name in form.fields:
+            value = getattr(form.instance, name, '')
+            # check for (local) ForeignKeys
+            if isinstance(value, Model):
+                value = value.pk
+            # check for (local) many to many fields
+            elif name in localm2m:
+                value = value.all()
+            # check for (external) ForeignKeys
+            elif name in externalfk:
+                value = value.all()
+            # check for (external) many to many fields
+            elif name in externalm2m:
+                value = value.all()
+            form.fields[full_name].initial = value
+
 class MultilingualInlineModelForm(forms.ModelForm):
     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
                  initial=None, error_class=ErrorList, label_suffix=':',
@@ -34,27 +57,7 @@ class MultilingualInlineModelForm(forms.ModelForm):
             prefix, initial, error_class, label_suffix, empty_permitted, instance)
         
         # read data for existing object, and set them as initial
-        opts = self.instance._meta
-        localm2m = [m2m.attname for m2m in opts.local_many_to_many]
-        externalfk = [obj.field.related_query_name() for obj in opts.get_all_related_objects()]
-        externalm2m = [m2m.get_accessor_name() for m2m in opts.get_all_related_many_to_many_objects()]
-        for name, db_field in get_translated_fields(self.instance):
-            full_name = '%s%s' % (MULTILINGUAL_INLINE_PREFIX, name)
-            if full_name in self.fields:
-                value = getattr(self.instance, name, '')
-                # check for (local) ForeignKeys
-                if isinstance(value, Model):
-                    value = value.pk
-                # check for (local) many to many fields
-                elif name in localm2m:
-                    value = value.all()
-                # check for (external) ForeignKeys
-                elif name in externalfk:
-                    value = value.all()
-                # check for (external) many to many fields
-                elif name in externalm2m:
-                    value = value.all()
-                self.fields[full_name].initial = value 
+        relation_hack(self, get_translated_fields(self.instance), MULTILINGUAL_INLINE_PREFIX)
 
 
 class MultilingualInlineFormSet(BaseInlineFormSet):
@@ -121,10 +124,10 @@ class MultilingualInlineAdmin(admin.TabularInline):
             self.fields = self.use_fields
         
     def get_formset(self, request, obj=None, **kwargs):
-        FormSet = super(MultilingualInlineAdmin, self).get_formset(request, obj=None, **kwargs)
+        FormSet = super(MultilingualInlineAdmin, self).get_formset(request, obj, **kwargs)
         FormSet.use_language = self.use_language
         for name, field in get_translated_fields(self.model, self.use_language):
-            FormSet.form.base_fields['%s%s' % (MULTILINGUAL_INLINE_PREFIX, name)] = self.formfield_for_dbfield(field)
+            FormSet.form.base_fields['%s%s' % (MULTILINGUAL_INLINE_PREFIX, name)] = self.formfield_for_dbfield(field, request=request)
         return FormSet
     
     
@@ -142,8 +145,11 @@ class MultilingualModelAdminForm(forms.ModelForm):
                                                     initial, error_class, label_suffix,
                                                     empty_permitted, instance)
         # read data for existing object, and set them as initial
-        for name in self.ml_fields:
-            self.fields[name].initial = getattr(self.instance, "%s_%s" % (name, self.use_language), '')
+        fields = [(f, getattr(self.instance, "%s_%s" % (f, self.use_language), '')) for f in self.ml_fields]
+        relation_hack(self, fields)
+        #for name in self.ml_fields:
+        #    value = getattr(self.instance, "%s_%s" % (name, self.use_language), '')
+        #    self.fields[name].initial = pass 
     
     def clean(self):
         cleaned_data = super(MultilingualModelAdminForm, self).clean()
@@ -153,6 +159,8 @@ class MultilingualModelAdminForm(forms.ModelForm):
     def validate_ml_unique(self):
         form_errors = []
         
+        if not hasattr(self.instance._meta, 'translation_model'):
+            return
         for check in self.instance._meta.translation_model._meta.unique_together[:]:
             lookup_kwargs = {'language_code': self.use_language}
             for field_name in check:
@@ -223,7 +231,7 @@ class MultilingualModelAdmin(admin.ModelAdmin):
         super(MultilingualModelAdmin, self).__init__(model, admin_site)
     
     def get_fill_check_field(self):
-        if self.fill_check_field is None:
+        if self.fill_check_field is None and hasattr(self.model._meta, 'translation_model'):
             opts = self.model._meta.translation_model._meta
             for field in opts.fields:
                 if field.attname in ('language_code', 'master_id'):
@@ -258,7 +266,7 @@ class MultilingualModelAdmin(admin.ModelAdmin):
         filled_languages = []
         fill_check_field = self.get_fill_check_field()
         if obj and fill_check_field is not None:
-            filled_languages = [t[0] for t in obj.translations.filter(**{'%s__isnull' % fill_check_field:False}).values_list('language_code')]
+            filled_languages = [t[0] for t in obj.translations.filter(**{'%s__isnull' % fill_check_field:False, '%s__gt' % fill_check_field:''}).values_list('language_code')]
         context.update({
             'current_language_index': self.use_language,
             'current_language_code': self.use_language,
@@ -334,6 +342,7 @@ def get_translated_fields(model, language=None):
         
 
 def get_default_translated_fields(model):
-    for name, (field, non_default) in model._meta.translation_model._meta.translated_fields.items():
-        if not non_default:
-            yield name, field
+    if hasattr(model._meta, 'translation_model'):
+        for name, (field, non_default) in model._meta.translation_model._meta.translated_fields.items():
+            if not non_default:
+                yield name, field
