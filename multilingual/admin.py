@@ -27,11 +27,11 @@ class MultilingualInlineModelForm(forms.ModelForm):
     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
                  initial=None, error_class=ErrorList, label_suffix=':',
                  empty_permitted=False, instance=None):
-        """Just full up intitial values for ml fields
         """
-        super(MultilingualInlineModelForm, self).__init__(data, files, auto_id, prefix,
-                                                    initial, error_class, label_suffix,
-                                                    empty_permitted, instance)
+        Fill initial ML Fields
+        """
+        super(MultilingualInlineModelForm, self).__init__(data, files, auto_id,
+            prefix, initial, error_class, label_suffix, empty_permitted, instance)
         
         # read data for existing object, and set them as initial
         opts = self.instance._meta
@@ -76,7 +76,8 @@ class MultilingualInlineFormSet(BaseInlineFormSet):
         return _queryset
 
     def save_new(self, form, commit=True):
-        """NOTE: save_new method is completely overridden here, there's no
+        """
+        NOTE: save_new method is completely overridden here, there's no
         other way to pretend double save otherwise. Just assign translated data
         to object  
         """
@@ -86,7 +87,8 @@ class MultilingualInlineFormSet(BaseInlineFormSet):
         return forms.save_instance(form, new_obj, exclude=[self._pk_field.name], commit=commit)
     
     def save_existing(self, form, instance, commit=True):
-        """NOTE: save_new method is completely overridden here, there's no
+        """
+        NOTE: save_new method is completely overridden here, there's no
         other way to pretend double save otherwise. Just assign translated data
         to object  
         """
@@ -133,7 +135,8 @@ class MultilingualModelAdminForm(forms.ModelForm):
     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
                  initial=None, error_class=ErrorList, label_suffix=':',
                  empty_permitted=False, instance=None):
-        """Just full up intitial values for ml fields
+        """
+        Fill up initial ML Fields
         """
         super(MultilingualModelAdminForm, self).__init__(data, files, auto_id, prefix,
                                                     initial, error_class, label_suffix,
