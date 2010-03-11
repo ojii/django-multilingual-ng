@@ -19,6 +19,7 @@ from django.utils.translation import ugettext as _
 from django.template.loader import find_template
 from django.template import TemplateDoesNotExist
 from multilingual.languages import get_default_language
+from multilingual.utils import GLL
 
 MULTILINGUAL_PREFIX = '_ml__trans_'
 MULTILINGUAL_INLINE_PREFIX = '_ml__inline_trans_'
@@ -239,7 +240,6 @@ class MultilingualModelAdmin(admin.ModelAdmin):
         return self.fill_check_field
     
     def get_form(self, request, obj=None, **kwargs):    
-        self.use_language = request.GET.get('lang', request.GET.get('language', get_default_language()))
         # assign language to inlines, so they now how to render
         for inline in self.inline_instances:
             if isinstance(inline, MultilingualInlineAdmin):
@@ -257,6 +257,13 @@ class MultilingualModelAdmin(admin.ModelAdmin):
             Form.base_fields[name] = form_field
             Form.use_language = self.use_language
         return Form
+            
+    def change_view(self, request, *args, **kwargs):
+        self.use_language = request.GET.get('lang', request.GET.get('language', get_default_language()))
+        GLL.lock(self.use_language)
+        resp = super(MultilingualModelAdmin, self).change_view(request, *args, **kwargs)
+        GLL.release()
+        return resp
     
     def render_change_form(self, request, context, add=False, change=False, form_url='', obj=None):
         # add context variables
@@ -270,12 +277,7 @@ class MultilingualModelAdmin(admin.ModelAdmin):
             'filled_languages': filled_languages,
             'old_template': self.get_old_template(),
         })
-        if obj:
-            obj._meta.force_language = self.use_language
-        resp = super(MultilingualModelAdmin, self).render_change_form(request, context, add, change, form_url, obj)
-        if obj:
-            obj._meta.force_language = None
-        return resp
+        return super(MultilingualModelAdmin, self).render_change_form(request, context, add, change, form_url, obj)
     
     
     def get_old_template(self):
@@ -292,7 +294,6 @@ class MultilingualModelAdmin(admin.ModelAdmin):
                 return template
             except TemplateDoesNotExist:
                 pass
-    
                 
     def response_change(self, request, obj):
         # because save & continue - so it shows the same language
