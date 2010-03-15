@@ -141,13 +141,8 @@ def get_translation(cls, language_code, create_if_necessary=False,
         language_code = getattr(cls, '_default_language', None)
     if language_code is None:
         language_code = get_default_language()
-        
-    force_language = cls._meta.force_language
+
     force = False
-    if force_language is not None:
-        language_code = force_language
-        force = True
-        
     if GLL.is_active:
         language_code = GLL.language_code
         force = True

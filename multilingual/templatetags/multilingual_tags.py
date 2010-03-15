@@ -80,7 +80,7 @@ def reorder_translation_formset_by_language_code(inline_admin_form):
     return [lang_to_form[language_code] for language_code in
         get_language_code_list()]
     
-class ForceLanguageNode(template.Node):
+class GLLNode(template.Node):
     def __init__(self, language_code, nodelist):
         self.language_code = language_code
         self.nodelist = nodelist
@@ -95,15 +95,18 @@ class ForceLanguageNode(template.Node):
         GLL.release()
         return output
     
-def force_language(parser, token):
-    tag_name, language_code = token.split_contents()
-    nodelist = parser.parse(('endforcelanguage',))
+def gll(parser, token):
+    bits = token.split_contents()
+    if len(bits) != 2:
+        raise template.TemplateSyntaxError("gll takes exactly one argument")
+    language_code = bits[1]
+    nodelist = parser.parse(('endgll',))
     parser.delete_first_token()
-    return ForceLanguageNode(language_code, nodelist)
+    return GLLNode(language_code, nodelist)
 
 register.filter(language_for_id)
 register.filter(language_name)
 register.filter(language_bidi)
 register.tag('edit_translation', do_edit_translation)
 register.filter(reorder_translation_formset_by_language_code)
-register.tag('forcelanguage', force_language)
+register.tag('gll', gll)

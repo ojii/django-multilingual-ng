@@ -147,7 +147,7 @@ class MultilingualModelAdminForm(forms.ModelForm):
                                                     empty_permitted, instance)
         # read data for existing object, and set them as initial
         fields = [(f, getattr(self.instance, "%s_%s" % (f, self.use_language), '')) for f in self.ml_fields]
-        relation_hack(self, fields) 
+        relation_hack(self, fields)
     
     def clean(self):
         cleaned_data = super(MultilingualModelAdminForm, self).clean()
