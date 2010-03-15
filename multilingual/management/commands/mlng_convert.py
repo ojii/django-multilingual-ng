@@ -56,22 +56,33 @@ backup of your database before running this command.""")
             print 'altering model %s' % obj
             table = obj._meta.translation_model._meta.db_table
             db.debug = True
-            db.add_column(table, 
-                'language_code',
-                models.CharField(max_length=15, blank=True,
-                    choices=get_language_choices(), db_index=True)
-            )
+            # do this in a transaction
+            db.start_transaction()
+            # first add the column with nullable values, and no index
+            lc_field = models.CharField(max_length=15, blank=True, null=True)
+            db.add_column(table, 'language_code', lc_field)
             # migrate the model
-            # This is TERRIBLE for performance, but whatever...
             print 'migrating data'
-            tempfield = models.IntegerField(blank=False, null=False,
-                choices=get_language_choices(), db_index=False)
-            tempfield.contribute_to_class(obj._meta.translation_model, 'language_id')
-            for row in obj.objects.all():
-                for translation in row.translations.all():
-                    translation.language_code = get_code_by_id(translation.language_id)
-                    translation.save()
-            db.create_index(table, ['language_code', 'master_id'])
+            # do the conversion server-side
+            # all modern RDBMSs support the case statement
+            update_sql = "UPDATE %s SET language_code = (CASE language_id %s END)" % (table, 
+                ' '.join(
+                    "WHEN %d THEN '%s'" % (lid, get_code_by_id(lid))
+                    for lid in range(1, len(settings.LANGUAGES) + 1)
+                    )
+                )
+            db.execute(update_sql)
             print 'deleting language_id column'
             db.delete_unique(table, ['language_id', 'master_id'])
             db.delete_column(table, 'language_id')
+            print 'setting up constraints and indices'
+            # alter the column to set not null
+            lc_field.null = False
+            db.alter_column(table, 'language_code', lc_field)
+            ## we don't really need this indexed. all queries should hit the unique index
+            #db.create_index(table, ['language_code'])
+            # and create a unique index for master & language
+            db.create_unique(table, ['language_code', 'master_id'])
+            # south might fail to commit if we don't do it explicitly
+            db.commit_transaction()
+
