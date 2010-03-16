@@ -1,9 +1,10 @@
-=====
+#####
 Usage
-=====
+#####
 
+***************************************
 Defining translatable fields on a Model
-=======================================
+***************************************
 
 Translatable fields on a model are defined using a nested class which must be a subclass of ``multilingual.translation.TranslationModel``.
 
@@ -21,8 +22,9 @@ An example of a multilingual news model::
 
 The inner class **must** be named ``Translation``.
 
+*****************************
 Accessing translatable fields
-=============================
+*****************************
 
 If you have an instance of the ``NewsEntry`` model above, you can access the translatable fields like this::
 

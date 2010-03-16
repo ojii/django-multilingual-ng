@@ -3,3 +3,4 @@
 .pydevproject
 dist
 django_multilingual_ng.egg-info
+_build
