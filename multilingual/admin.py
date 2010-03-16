@@ -24,6 +24,17 @@ from multilingual.utils import GLL
 MULTILINGUAL_PREFIX = '_ml__trans_'
 MULTILINGUAL_INLINE_PREFIX = '_ml__inline_trans_'
 
+def gll(func):
+    def wrapped(cls, request, *args, **kwargs):
+        cls.use_language = request.GET.get('lang', request.GET.get('language', get_default_language()))
+        GLL.lock(cls.use_language)
+        resp = func(cls, request, *args, **kwargs)
+        GLL.release()
+        return resp
+    wrapped.__name__ = func.__name__
+    wrapped.__doc__ = func.__doc__
+    return wrapped
+
 def relation_hack(form, fields, prefix=''):
     opts = form.instance._meta
     localm2m = [m2m.attname for m2m in opts.local_many_to_many]
@@ -258,12 +269,18 @@ class MultilingualModelAdmin(admin.ModelAdmin):
             Form.use_language = self.use_language
         return Form
             
-    def change_view(self, request, *args, **kwargs):
-        self.use_language = request.GET.get('lang', request.GET.get('language', get_default_language()))
-        GLL.lock(self.use_language)
-        resp = super(MultilingualModelAdmin, self).change_view(request, *args, **kwargs)
-        GLL.release()
-        return resp
+            
+    @gll
+    def change_view(self, *args, **kwargs):
+        return super(MultilingualModelAdmin, self).change_view(*args, **kwargs)
+    
+    @gll
+    def add_view(self, *args, **kwargs):
+        return super(MultilingualModelAdmin, self).add_view(*args, **kwargs)
+    
+    @gll
+    def delete_view(self, *args, **kwargs):
+        return super(MultilingualModelAdmin, self).add_view(*args, **kwargs)
     
     def render_change_form(self, request, context, add=False, change=False, form_url='', obj=None):
         # add context variables
