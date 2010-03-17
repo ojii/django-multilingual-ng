@@ -33,6 +33,7 @@ Contents
    :maxdepth: 1
    
    installation
+   changes
    usage
 
 
