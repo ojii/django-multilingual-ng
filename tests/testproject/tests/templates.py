@@ -3,6 +3,7 @@ from django.template import Template, Context
 from multilingual.flatpages.models import MultilingualFlatPage
 
 class TemplateTestCase(unittest.TestCase):
+    fixtures = ['testdata.json']
     def test_gll(self):
         mfp = MultilingualFlatPage.objects.get(url='/test1/')
         ctx = Context({'page': mfp})
