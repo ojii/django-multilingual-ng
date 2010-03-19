@@ -303,7 +303,7 @@ class MultilingualQuery(Query):
                     new_table = (master_table_name + "__" + trans_table_alias)
                     qn = self.get_compiler(DEFAULT_DB_ALIAS).quote_name_unless_alias
                     qn2 = self.get_compiler(DEFAULT_DB_ALIAS).connection.ops.quote_name
-                    trans_join = ('LEFT JOIN %s AS %s ON ((%s.master_id = %s.%s) AND (%s.language_code = %s))'
+                    trans_join = ("LEFT JOIN %s AS %s ON ((%s.master_id = %s.%s) AND (%s.language_code = '%s'))"
                                  % (qn2(model._meta.db_table),
                                  qn2(new_table),
                                  qn2(new_table),
