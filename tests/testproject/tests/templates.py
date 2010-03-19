@@ -1,8 +1,8 @@
-import unittest
+from django.test import TestCase
 from django.template import Template, Context
 from multilingual.flatpages.models import MultilingualFlatPage
 
-class TemplateTestCase(unittest.TestCase):
+class TemplateTestCase(TestCase):
     fixtures = ['testdata.json']
     def test_gll(self):
         mfp = MultilingualFlatPage.objects.get(url='/test1/')

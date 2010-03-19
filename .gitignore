@@ -11,3 +11,4 @@ tests/parts
 tests/.installed.cfg
 tests/testproject.db
 tests/downloads
+testproject.db
