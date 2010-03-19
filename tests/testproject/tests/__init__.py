@@ -1,6 +1,7 @@
 import unittest
 from testproject.tests.core import CoreTestCase
 from testproject.tests.flatpages import FlatpagesTestCase
+from testproject.tests.templates import TemplateTestCase
 
 
 def suite():
@@ -8,4 +9,5 @@ def suite():
     s = unittest.TestSuite()
     s.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(CoreTestCase))
     s.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(FlatpagesTestCase))
+    s.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(TemplateTestCase))
     return s

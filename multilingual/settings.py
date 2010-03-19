@@ -19,7 +19,7 @@ FALLBACK_LANGUAGES = getattr(settings, 'MULTILINGUAL_FALLBACK_LANGUAGES',
     
 IMPLICIT_FALLBACK = getattr(settings, 'MULTILINGUAL_IMPLICIT_FALLBACK', True)
 
-DEFAULT_LANGUAGE = LANGUAGES[0][0]
+DEFAULT_LANGUAGE = getattr(settings, 'MULTILINGUAL_DEFAULT_LANGUAGE', LANGUAGES[0][0])
 
 mcp = "multilingual.context_processors.multilingual"
 if mcp not in settings.TEMPLATE_CONTEXT_PROCESSORS:

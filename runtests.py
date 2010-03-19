@@ -3,7 +3,7 @@ import os
 import sys
 import unittest
 
-thisdir = os.path.abspath(os.path.dirname(__file__))
+thisdir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(thisdir + '/tests/')
 sys.path.insert(0, thisdir)
 os.environ['DJANGO_SETTINGS_MODULE'] = 'testproject.settings'
@@ -16,10 +16,11 @@ def call(command):
         if not data:
             break
         print data
-    pop.poll()
-    return pop.returncode
+        
+def run():
+    call("python %s/tests/bootstrap.py" % thisdir)
+    call("%s/tests/bin/buildout -c %s/tests/buildout.cfg" % (thisdir, thisdir))
+    call("%s/tests/bin/test" % thisdir)
 
 if __name__ == '__main__':
-    call("python %s/tests/bootstrap.py -c %s/tests/buildout.cfg" % (thisdir, thisdir))
-    call("%s/tests/bin/buildout" % thisdir)
-    call("%s/tests/bin/test" % thisdir)
+    run()

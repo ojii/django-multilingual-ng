@@ -28,6 +28,7 @@ SITE_ID = 1
 
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
@@ -64,3 +65,5 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 TEMPLATE_DIRS = (
     os.path.join(os.path.dirname(__file__), "templates"),
 )
+
+MULTILINGUAL_DEFAULT_LANGUAGE = 'en'
