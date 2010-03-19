@@ -8,7 +8,7 @@ setup(
     description = 'Multilingual extension for Django - NG',
     author = 'Jonas Obrist',
     url = 'http://github.com/ojii/django-multilingual-ng',
-    packages = find_packages(exclude=["testproject",]),
+    packages = find_packages(exclude=['parts','downloads','eggs', '.installed.cfg', 'bin', 'develop-eggs']),
     zip_safe=False,
     package_data={
         'multilingual': [

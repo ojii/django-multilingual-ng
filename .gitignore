@@ -4,3 +4,10 @@
 dist
 django_multilingual_ng.egg-info
 _build
+tests/bin
+tests/develop-eggs
+tests/eggs
+tests/parts
+tests/.installed.cfg
+tests/testproject.db
+tests/downloads

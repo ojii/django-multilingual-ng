@@ -3,6 +3,8 @@ Django-multilingual: a QuerySet subclass for models with translatable
 fields.
 
 This file contains the implementation for QSRF Django.
+
+Huge thanks to hubscher.remy for writing this!
 """
 from django.db.models.sql.compiler import SQLCompiler
 

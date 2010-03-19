@@ -8,7 +8,6 @@ Note about version numbers:
 VERSION = ('0', '1', '19')
 __version__ = '.'.join(VERSION)
 
-
 try:
     """
     WARNING: All these names imported here WILL BE DEPRECATED!
