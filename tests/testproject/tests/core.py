@@ -42,3 +42,6 @@ class CoreTestCase(TestCase):
     def test_get_fallbacks(self):
         self.assertEqual(languages.get_fallbacks('en'), ['en', 'ja'])
         self.assertEqual(languages.get_fallbacks('ja'), ['ja', 'en'])
+        
+    def test_implicit_fallbacks(self):
+        self.assertEqual(languages.get_fallbacks('en-us'), ['en-us', 'en'])

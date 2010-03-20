@@ -69,7 +69,7 @@ def get_translation_table_alias(translation_table_name, language_code):
 def get_language_idx(language_code):
     return get_language_code_list().index(language_code)
 
-def get_translated_field_alias(field_name, language_code=None):
+def get_translated_field_alias(field_name, language_code):
     """
     Return an alias for field_name field for a given language_code.
     Used in SQL queries.
