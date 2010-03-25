@@ -68,8 +68,9 @@ class MultilingualInlineModelForm(forms.ModelForm):
         super(MultilingualInlineModelForm, self).__init__(data, files, auto_id,
             prefix, initial, error_class, label_suffix, empty_permitted, instance)
         
-        # read data for existing object, and set them as initial
-        relation_hack(self, get_translated_fields(self.instance), MULTILINGUAL_INLINE_PREFIX)
+        # only read initial data if the object already exists, not if we're adding it!
+        if self.instance.pk:
+            relation_hack(self, get_translated_fields(self.instance), MULTILINGUAL_INLINE_PREFIX)
 
 
 class MultilingualInlineFormSet(BaseInlineFormSet):
@@ -156,9 +157,10 @@ class MultilingualModelAdminForm(forms.ModelForm):
         super(MultilingualModelAdminForm, self).__init__(data, files, auto_id, prefix,
                                                     initial, error_class, label_suffix,
                                                     empty_permitted, instance)
-        # read data for existing object, and set them as initial
-        fields = [(f, getattr(self.instance, "%s_%s" % (f, self.use_language), '')) for f in self.ml_fields]
-        relation_hack(self, fields)
+        # only try to fill intial data if we are not adding an object!
+        if self.instance.pk:
+            fields = [(f, getattr(self.instance, "%s_%s" % (f, self.use_language), '')) for f in self.ml_fields]
+            relation_hack(self, fields)
     
     def clean(self):
         cleaned_data = super(MultilingualModelAdminForm, self).clean()
