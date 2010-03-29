@@ -282,7 +282,7 @@ class MultilingualModelAdmin(admin.ModelAdmin):
     
     @gll
     def delete_view(self, *args, **kwargs):
-        return super(MultilingualModelAdmin, self).add_view(*args, **kwargs)
+        return super(MultilingualModelAdmin, self).delete_view(*args, **kwargs)
     
     def render_change_form(self, request, context, add=False, change=False, form_url='', obj=None):
         # add context variables

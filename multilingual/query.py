@@ -496,6 +496,7 @@ class MultilingualModelQuerySet(QuerySet):
     def __init__(self, model=None, query=None, using=None):
         query = query or MultilingualQuery(model)
         super(MultilingualModelQuerySet, self).__init__(model, query, using)
+        self._field_name_cache = None
 
     def for_language(self, language_code):
         """
@@ -546,9 +547,20 @@ class MultilingualModelQuerySet(QuerySet):
             return super(MultilingualModelQuerySet, self).extra(order_by=new_field_names)
         else:
             return super(MultilingualModelQuerySet, self).order_by(*field_names)
+        
+    def _get_all_field_names(self):
+        if self._field_name_cache is None:
+            self._field_name_cache = self.model._meta.get_all_field_names() + ['pk']
+        return self._field_name_cache
 
     def values(self, *fields):
-        raise NotImplementedError
+        for field in fields:
+            if field not in self._get_all_field_names():
+                raise NotImplementedError("Multilingual fields cannot be queried using queryset.values(...)")
+        return super(MultilingualModelQuerySet, self).values(*fields)
 
     def values_list(self, *fields, **kwargs):
-        raise NotImplementedError
+        for field in fields:
+            if field not in self._get_all_field_names():
+                raise NotImplementedError("Multilingual fields cannot be queried using queryset.values(...)")
+        return super(MultilingualModelQuerySet, self).values(*fields, **kwargs)
