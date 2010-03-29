@@ -87,8 +87,6 @@ class MultilingualInlineFormSet(BaseInlineFormSet):
             _queryset = qs[:self.max_num]
         else:
             _queryset = qs
-        if hasattr(self, 'use_language'):
-            _queryset  = qs.filter(translations__language_code=self.use_language)
         return _queryset
 
     def save_new(self, form, commit=True):
