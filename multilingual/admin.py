@@ -110,10 +110,13 @@ class MultilingualInlineFormSet(BaseInlineFormSet):
         return forms.save_instance(form, instance, exclude=[self._pk_field.name], commit=commit)
     
     def _prepare_multilingual_object(self, obj, form):
+        opts = obj._meta
         for name in form.cleaned_data:
+            field = opts.get_field_by_name(name)[0]
             m = re.match(r'^%s(?P<field_name>.*)$' % MULTILINGUAL_INLINE_PREFIX, name)
             if m:
-                setattr(obj, m.groupdict()['field_name'], form.cleaned_data[name])
+                field.save_form_data(obj, form.cleaned_data[name])
+                setattr(obj, m.groupdict()['field_name'], getattr(obj, name))
       
       
 class MultilingualInlineAdmin(admin.TabularInline):
@@ -157,7 +160,7 @@ class MultilingualModelAdminForm(forms.ModelForm):
                                                     empty_permitted, instance)
         # only try to fill intial data if we are not adding an object!
         if self.instance.pk:
-            fields = [(f, getattr(self.instance, "%s_%s" % (f, self.use_language), '')) for f in self.ml_fields]
+            fields = [(f, getattr(self.instance, "%s_%s" % (f, GLL.language_code), '')) for f in self.ml_fields]
             relation_hack(self, fields)
     
     def clean(self):
@@ -171,7 +174,7 @@ class MultilingualModelAdminForm(forms.ModelForm):
         if not hasattr(self.instance._meta, 'translation_model'):
             return
         for check in self.instance._meta.translation_model._meta.unique_together[:]:
-            lookup_kwargs = {'language_code': self.use_language}
+            lookup_kwargs = {'language_code': GLL.language_code}
             for field_name in check:
                 #local_name = "%s_%s" % (field_name, self.use_language)
                 if self.cleaned_data.get(field_name) is not None:
@@ -212,8 +215,12 @@ class MultilingualModelAdminForm(forms.ModelForm):
         
         
     def _prepare_multilingual_object(self, obj, form):
+        opts = self.instance._meta
         for name in self.ml_fields:
-            setattr(obj, "%s_%s" % (name, self.use_language), form.cleaned_data[name])
+            field = opts.get_field_by_name(name)[0]
+            # respect save_form_data
+            field.save_form_data(self.instance, form.cleaned_data[name])
+            setattr(obj, "%s_%s" % (name, GLL.language_code), getattr(self.instance, name))
 
 
 

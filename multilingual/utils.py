@@ -6,22 +6,32 @@ def is_multilingual_model(model):
     """
     return hasattr(model._meta, 'translation_model')
 
+
+class GLLError(Exception): pass
+
+
 class GlobalLanguageLock(object):
     """
     The Global Language Lock can be used to force django-multilingual-ng to use
     a specific language and not try to fall back.
     """
     def __init__(self):
-        self.language_code = None
+        self._language_code = None
     
     def lock(self, language_code):
-        self.language_code = language_code
+        self._language_code = language_code
         
     def release(self):
-        self.language_code = None
+        self._language_code = None
+        
+    @property
+    def language_code(self):
+        if self._language_code is not None:
+            return self._language_code
+        raise GLLError("The Global Lnaguage Lock is not active")
         
     @property
     def is_active(self):
-        return self.language_code is not None
+        return self._language_code is not None
         
 GLL = GlobalLanguageLock()
