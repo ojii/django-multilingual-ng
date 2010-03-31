@@ -116,7 +116,7 @@ class MultilingualInlineFormSet(BaseInlineFormSet):
             m = re.match(r'^%s(?P<field_name>.*)$' % MULTILINGUAL_INLINE_PREFIX, fieldname)
             if m:
                 field.save_form_data(self.instance, form.cleaned_data[fieldname])
-                setattr(obj, realname, getattr(self.instance, realname))
+                setattr(obj, realname, getattr(self.instance, realname.rsplit('_', 1)[0]))
       
       
 class MultilingualInlineAdmin(admin.TabularInline):
