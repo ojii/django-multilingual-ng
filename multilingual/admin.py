@@ -111,12 +111,12 @@ class MultilingualInlineFormSet(BaseInlineFormSet):
     
     def _prepare_multilingual_object(self, obj, form):
         opts = obj._meta
-        for name in form.cleaned_data:
-            field = opts.get_field_by_name(name)[0]
-            m = re.match(r'^%s(?P<field_name>.*)$' % MULTILINGUAL_INLINE_PREFIX, name)
+        for realname, fieldname in self.ml_fields.items():
+            field = opts.get_field_by_name(realname)[0]
+            m = re.match(r'^%s(?P<field_name>.*)$' % MULTILINGUAL_INLINE_PREFIX, fieldname)
             if m:
-                field.save_form_data(obj, form.cleaned_data[name])
-                setattr(obj, m.groupdict()['field_name'], getattr(obj, name))
+                field.save_form_data(self.instance, form.cleaned_data[fieldname])
+                setattr(obj, realname, getattr(self.instance, realname))
       
       
 class MultilingualInlineAdmin(admin.TabularInline):
@@ -140,8 +140,11 @@ class MultilingualInlineAdmin(admin.TabularInline):
     def get_formset(self, request, obj=None, **kwargs):
         FormSet = super(MultilingualInlineAdmin, self).get_formset(request, obj, **kwargs)
         FormSet.use_language = self.use_language
+        FormSet.ml_fields = {}
         for name, field in get_translated_fields(self.model, self.use_language):
-            FormSet.form.base_fields['%s%s' % (MULTILINGUAL_INLINE_PREFIX, name)] = self.formfield_for_dbfield(field, request=request)
+            fieldname = '%s%s' % (MULTILINGUAL_INLINE_PREFIX, name)
+            FormSet.form.base_fields[fieldname] = self.formfield_for_dbfield(field, request=request)
+            FormSet.ml_fields[name] = fieldname
         return FormSet
     
     
