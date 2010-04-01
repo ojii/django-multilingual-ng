@@ -8,6 +8,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import signals
 from django.db.models.base import ModelBase
+from django.utils.translation import get_language
 from multilingual.languages import *
 from multilingual.exceptions import TranslationDoesNotExist
 from multilingual.fields import TranslationForeignKey
@@ -75,13 +76,26 @@ def fill_translation_cache(instance):
             instance._translation_cache[translation.language_code] = translation
 
 class TranslatedFieldProxy(property):
+    """
+    This is a proxy field to be set onto the main class to proxy to a translation.
+    """
     def __init__(self, field_name, alias, field, language_code=None,
                  fallback=False):
         self.field_name = field_name
         self.field = field
         self.admin_order_field = alias
-        self.language_code = language_code
+        self._language_code = language_code
         self.fallback = fallback
+        
+    @property
+    def language_code(self):
+        """
+        If _language_code is None we are the _current field, so we use the
+        currently used language for lookups.
+        """
+        if self._language_code:
+            return self._language_code
+        return get_language()
 
     def __get__(self, obj, objtype=None):
         if obj is None:
@@ -151,13 +165,12 @@ def get_translation(cls, language_code, create_if_necessary=False,
         return cls._translation_cache.get(language_code, None)
 
     if create_if_necessary:
-        # case 1
         new_translation = cls._meta.translation_model(master=cls,
                                                       language_code=language_code)
         cls._translation_cache[language_code] = new_translation
         return new_translation
+    # only fall backif we're not in 'force' mode (GLL)
     elif (not force) and fallback:
-        # case 2
         for fb_lang_code in get_fallbacks(language_code):
             trans = cls._translation_cache.get(fb_lang_code, None)
             if trans:
@@ -229,6 +242,11 @@ class TranslationModel(object):
                     setattr(main_cls, fname_lng + FALLBACK_FIELD_SUFFIX,
                             TranslatedFieldProxy(fname, fname_lng, field,
                                                  language_code, fallback=True))
+                fname_current = fname + '_current'
+                setattr(main_cls, fname_current,
+                        TranslatedFieldProxy(fname, fname_current, field, None))
+                setattr(main_cls, fname_current + FALLBACK_FIELD_SUFFIX,
+                        TranslatedFieldProxy(fname, fname_current, field, None, fallback=True))
 
         return translated_fields
     create_translation_attrs = classmethod(create_translation_attrs)
