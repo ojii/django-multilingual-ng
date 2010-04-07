@@ -30,9 +30,15 @@ class MultilingualSQLCompiler(SQLCompiler):
         opts = self.query.model._meta
         qn = self.quote_name_unless_alias
         qn2 = self.connection.ops.quote_name
+        
+        reverse_alias_map = {}
+        for key, data in self.query.alias_map.items():
+            reverse_alias_map[data[0]] = key
 
         if hasattr(opts, 'translation_model'):
             master_table_name = opts.db_table
+            if master_table_name in reverse_alias_map:
+                master_table_name = reverse_alias_map[master_table_name]
             translation_opts = opts.translation_model._meta
             trans_table_name = translation_opts.db_table
             for language_code in get_language_code_list():

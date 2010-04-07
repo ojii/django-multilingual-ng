@@ -6,6 +6,7 @@ This file contains the implementation for QSRF Django.
 """
 
 import datetime
+from copy import deepcopy
 
 from django.core.exceptions import FieldError
 from django.db import connection
@@ -268,7 +269,6 @@ class MultilingualQuery(Query):
             last.append(len(joins))
             if name == 'pk':
                 name = opts.pk.name
-
             try:
                 field, model, direct, m2m = opts.get_field_by_name(name)
             except FieldDoesNotExist:
@@ -280,7 +280,7 @@ class MultilingualQuery(Query):
                         field, model, direct, m2m = opts.get_field_by_name(f.name)
                         break
                 else:
-                    names = opts.get_all_field_names()
+                    names = opts.get_all_field_names() + self.aggregate_select.keys()
                     raise FieldError("Cannot resolve keyword %r into field. "
                             "Choices are: %s" % (name, ", ".join(names)))
 
@@ -288,8 +288,9 @@ class MultilingualQuery(Query):
                 for alias in joins:
                     self.unref_alias(alias)
                 raise MultiJoin(pos + 1)
-
-            #NOTE: Start Django Multilingual specific code
+            #===================================================================
+            # Django Multilingual NG Specific Code START
+            #===================================================================
             if hasattr(opts, 'translation_model'):
                 translation_opts = opts.translation_model._meta
                 if model == opts.translation_model:
@@ -303,7 +304,7 @@ class MultilingualQuery(Query):
                     new_table = (master_table_name + "__" + trans_table_alias)
                     qn = self.get_compiler(DEFAULT_DB_ALIAS).quote_name_unless_alias
                     qn2 = self.get_compiler(DEFAULT_DB_ALIAS).connection.ops.quote_name
-                    trans_join = ("LEFT JOIN %s AS %s ON ((%s.master_id = %s.%s) AND (%s.language_code = '%s'))"
+                    trans_join = ("JOIN %s AS %s ON ((%s.master_id = %s.%s) AND (%s.language_code = '%s'))"
                                  % (qn2(model._meta.db_table),
                                  qn2(new_table),
                                  qn2(new_table),
@@ -314,23 +315,32 @@ class MultilingualQuery(Query):
                     self.extra_join[new_table] = trans_join
                     target = field
                     continue
-                    #NOTE: End Django Multilingual specific code
+            #===================================================================
+            # Django Multilingual NG Specific Code END
+            #===================================================================
             elif model:
                 # The field lives on a base class of the current model.
+                # Skip the chain of proxy to the concrete proxied model
+                proxied_model = get_proxied_model(opts)
+
                 for int_model in opts.get_base_chain(model):
-                    lhs_col = opts.parents[int_model].column
-                    dedupe = lhs_col in opts.duplicate_targets
-                    if dedupe:
-                        exclusions.update(self.dupe_avoidance.get(
-                                (id(opts), lhs_col), ()))
-                        dupe_set.add((opts, lhs_col))
-                    opts = int_model._meta
-                    alias = self.join((alias, opts.db_table, lhs_col,
-                            opts.pk.column), exclusions=exclusions)
-                    joins.append(alias)
-                    exclusions.add(alias)
-                    for (dupe_opts, dupe_col) in dupe_set:
-                        self.update_dupe_avoidance(dupe_opts, dupe_col, alias)
+                    if int_model is proxied_model:
+                        opts = int_model._meta
+                    else:
+                        lhs_col = opts.parents[int_model].column
+                        dedupe = lhs_col in opts.duplicate_targets
+                        if dedupe:
+                            exclusions.update(self.dupe_avoidance.get(
+                                    (id(opts), lhs_col), ()))
+                            dupe_set.add((opts, lhs_col))
+                        opts = int_model._meta
+                        alias = self.join((alias, opts.db_table, lhs_col,
+                                opts.pk.column), exclusions=exclusions)
+                        joins.append(alias)
+                        exclusions.add(alias)
+                        for (dupe_opts, dupe_col) in dupe_set:
+                            self.update_dupe_avoidance(dupe_opts, dupe_col,
+                                    alias)
             cached_data = opts._join_cache.get(name)
             orig_opts = opts
             dupe_col = direct and field.column or field.field.column
@@ -447,9 +457,12 @@ class MultilingualQuery(Query):
                     self.update_dupe_avoidance(dupe_opts, dupe_col, int_alias)
                 except NameError:
                     self.update_dupe_avoidance(dupe_opts, dupe_col, alias)
-        
+
         if pos != len(names) - 1:
-            raise FieldError("Join on field %r not permitted." % name)
+            if pos == len(names) - 2:
+                raise FieldError("Join on field %r not permitted. Did you misspell %r for the lookup type?" % (name, names[pos + 1]))
+            else:
+                raise FieldError("Join on field %r not permitted." % name)
 
         return field, target, opts, joins, last, extra_filters
 
@@ -497,6 +510,22 @@ class MultilingualModelQuerySet(QuerySet):
         query = query or MultilingualQuery(model)
         super(MultilingualModelQuerySet, self).__init__(model, query, using)
         self._field_name_cache = None
+        
+    def __deepcopy__(self, memo):
+        """
+        Deep copy of a QuerySet doesn't populate the cache
+        """
+        obj_dict = deepcopy(self.__dict__, memo)
+        obj_dict['_iter'] = None
+        #=======================================================================
+        # Django Multilingual NG Specific Code START
+        #=======================================================================
+        obj = self.__class__(self.model) # add self.model as first argument
+        #=======================================================================
+        # Django Multilingual NG Specific Code END
+        #=======================================================================
+        obj.__dict__.update(obj_dict)
+        return obj
 
     def for_language(self, language_code):
         """
