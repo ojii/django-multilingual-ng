@@ -1,4 +1,5 @@
 from multilingual.languages import get_default_language
+from django.utils.decorators import auto_adapt_to_methods
 
 def is_multilingual_model(model):
     """
@@ -35,3 +36,18 @@ class GlobalLanguageLock(object):
         return self._language_code is not None
         
 GLL = GlobalLanguageLock()
+
+
+def gll_unlock_decorator(func):
+    def _decorated(*args, **kwargs):
+        if not GLL.is_active:
+            return func(*args, **kwargs)
+        language_code = GLL.language_code
+        GLL.release()
+        result = func(*args, **kwargs)
+        GLL.lock(language_code)
+        return result
+    _decorated.__name__ = func.__name__
+    _decorated.__doc__ = func.__doc__
+    return _decorated
+gll_unlock = auto_adapt_to_methods(gll_unlock_decorator)
