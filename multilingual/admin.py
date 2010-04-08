@@ -272,13 +272,22 @@ class MultilingualModelAdmin(admin.ModelAdmin):
         for name, field in get_default_translated_fields(self.model):
             if not field.editable:
                 continue
-            form_field = self.formfield_for_dbfield(field)
+            form_field = self.formfield_for_dbfield(field, request=request)
             local_name = "%s_%s" % (name, self.use_language)
             Form.ml_fields[name] = form_field
             Form.base_fields[name] = form_field
             Form.use_language = self.use_language
         return Form
-            
+    
+    def placeholder_plugin_filter(self, request, queryset):
+        """
+        This is only used on models which use placeholders from the django-cms
+        """
+        if not request:
+            return queryset
+        if GLL.is_active:
+            return queryset.filter(language=GLL.language_code)
+        return queryset
             
     @gll
     def change_view(self, *args, **kwargs):
