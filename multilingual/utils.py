@@ -1,5 +1,8 @@
 from multilingual.languages import get_default_language
-from django.utils.decorators import auto_adapt_to_methods
+try:
+    from django.utils.decorators import auto_adapt_to_methods as method_decorator
+except ImportError:
+    from django.utils.decorators import method_decorator
 
 def is_multilingual_model(model):
     """
@@ -50,4 +53,4 @@ def gll_unlock_decorator(func):
     _decorated.__name__ = func.__name__
     _decorated.__doc__ = func.__doc__
     return _decorated
-gll_unlock = auto_adapt_to_methods(gll_unlock_decorator)
+gll_unlock = method_decorator(gll_unlock_decorator)
