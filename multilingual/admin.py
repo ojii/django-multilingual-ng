@@ -41,6 +41,8 @@ def standard_get_fill_check_field(stdopts):
         for field in opts.fields:
             if field.name in ('language_code', 'master_id'):
                 continue
+            if field.name.startswith('master_'):
+                continue
             if not (field.blank or field.null):
                 return field.name
     return None
