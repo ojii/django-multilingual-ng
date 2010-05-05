@@ -35,6 +35,16 @@ def gll(func):
     wrapped.__doc__ = func.__doc__
     return wrapped
 
+def standard_get_fill_check_field(stdopts):
+    if hasattr(stdopts, 'translation_model'):
+        opts = stdopts.translation_model._meta
+        for field in opts.fields:
+            if field.name in ('language_code', 'master_id'):
+                continue
+            if not (field.blank or field.null):
+                return field.name
+    return None
+
 def relation_hack(form, fields, prefix=''):
     opts = form.instance._meta
     localm2m = [m2m.attname for m2m in opts.local_many_to_many]
@@ -129,6 +139,8 @@ class MultilingualInlineAdmin(admin.TabularInline):
     inline_css_class = None
     
     use_language = None
+    
+    fill_check_field = None
     #TODO: add some nice template
     
     def __init__(self, parent_model, admin_site):
@@ -146,6 +158,25 @@ class MultilingualInlineAdmin(admin.TabularInline):
             FormSet.form.base_fields[fieldname] = self.formfield_for_dbfield(field, request=request)
             FormSet.ml_fields[name] = fieldname
         return FormSet
+
+    def queryset(self, request):
+        """
+        Filter objects which don't have a value in this language
+        """
+        qs = super(MultilingualInlineAdmin, self).queryset(request)
+        checkfield = self.get_fill_check_field()
+        if checkfield is not None:
+            kwargs = {str('%s_%s__isnull' % (checkfield, GLL.language_code)): False}
+            from django.db.models.fields import CharField
+            if isinstance(self.model._meta.translation_model._meta.get_field_by_name(checkfield)[0], CharField):
+                kwargs[str('%s_%s__gt' % (checkfield, GLL.language_code))] = ''
+            return qs.filter(**kwargs)
+        return qs
+    
+    def get_fill_check_field(self):
+        if self.fill_check_field is None:
+            self.fill_check_field = standard_get_fill_check_field(self.model._meta)
+        return self.fill_check_field
     
     
 class MultilingualModelAdminForm(forms.ModelForm):
@@ -239,6 +270,11 @@ class MultilingualModelAdmin(admin.ModelAdmin):
     use_language = None
     
     fill_check_field = None
+
+    class Media:
+        css = {
+            'all': ('%smultilingual/admin/css/style.css' % settings.MEDIA_URL,)
+        }
     
     def __init__(self, model, admin_site):
         if hasattr(self, 'use_fieldsets'):
@@ -250,14 +286,8 @@ class MultilingualModelAdmin(admin.ModelAdmin):
         super(MultilingualModelAdmin, self).__init__(model, admin_site)
     
     def get_fill_check_field(self):
-        if self.fill_check_field is None and hasattr(self.model._meta, 'translation_model'):
-            opts = self.model._meta.translation_model._meta
-            for field in opts.fields:
-                if field.attname in ('language_code', 'master_id'):
-                    continue
-                if not (field.blank or field.null):
-                    self.fill_check_field = field.attname
-                    break
+        if self.fill_check_field is None:
+            self.fill_check_field = standard_get_fill_check_field(self.model._meta)
         return self.fill_check_field
     
     def get_form(self, request, obj=None, **kwargs):    
@@ -306,7 +336,11 @@ class MultilingualModelAdmin(admin.ModelAdmin):
         filled_languages = []
         fill_check_field = self.get_fill_check_field()
         if obj and fill_check_field is not None:
-            filled_languages = [t[0] for t in obj.translations.filter(**{'%s__isnull' % fill_check_field:False, '%s__gt' % fill_check_field:''}).values_list('language_code')]
+            from django.db.models.fields import CharField
+            kwargs = {'%s__isnull' % fill_check_field:False}
+            if isinstance(self.model._meta.translation_model._meta.get_field_by_name(fill_check_field)[0], CharField):
+                kwargs['%s__gt' % fill_check_field] = ''
+            filled_languages = [t[0] for t in obj.translations.filter(**kwargs).values_list('language_code')]
         context.update({
             'current_language_index': self.use_language,
             'current_language_code': self.use_language,
@@ -346,12 +380,6 @@ class MultilingualModelAdmin(admin.ModelAdmin):
                 path += "?%s" % lang
             return HttpResponseRedirect(path)
         return super(MultilingualModelAdmin, self).response_change(request, obj)
-
-    
-    class Media:
-        css = {
-            'all': ('%smultilingual/admin/css/style.css' % settings.MEDIA_URL,)
-        }
     
 
 def get_translated_fields(model, language=None):

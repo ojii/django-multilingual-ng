@@ -119,7 +119,9 @@ class MultilingualQuery(Query):
                     can_reuse)
             return
 
-        #NOTE: here comes Django Multilingual
+        #=======================================================================
+        # Django Mulitlingual NG Specific Code START
+        #=======================================================================
         if hasattr(opts, 'translation_model'):
             field_name = parts[-1]
             if field_name == 'pk':
@@ -137,7 +139,9 @@ class MultilingualQuery(Query):
                     new_table = (master_table_name + "__" + trans_table_alias)
                     self.where.add(constraint_tuple(new_table, field.column, field, lookup_type, value), connector)
                     return
-
+        #=======================================================================
+        # Django Mulitlingual NG Specific Code END
+        #=======================================================================
         final = len(join_list)
         penultimate = last.pop()
         if penultimate == final:
@@ -483,7 +487,7 @@ class MultilingualQuery(Query):
     def get_count(self, using=None):
         # optimize for the common special case: count without any
         # filters
-        if ((not (self.select or self.where or self.extra_where))
+        if ((not (self.select or self.where ))#or self.extra_where))
             and self.include_translation_data):
             obj = self.clone(extra_select = {},
                              extra_join = {},
