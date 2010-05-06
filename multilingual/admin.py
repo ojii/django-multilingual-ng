@@ -39,9 +39,7 @@ def standard_get_fill_check_field(stdopts):
     if hasattr(stdopts, 'translation_model'):
         opts = stdopts.translation_model._meta
         for field in opts.fields:
-            if field.name in ('language_code', 'master_id'):
-                continue
-            if field.name.startswith('master_'):
+            if field.name in ('language_code', 'master'):
                 continue
             if not (field.blank or field.null):
                 return field.name
