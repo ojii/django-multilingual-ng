@@ -68,6 +68,7 @@ def relation_hack(form, fields, prefix=''):
                 value = value.all()
             form.fields[full_name].initial = value
 
+
 class MultilingualInlineModelForm(forms.ModelForm):
     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
                  initial=None, error_class=ErrorList, label_suffix=':',
@@ -151,9 +152,9 @@ class MultilingualInlineAdmin(admin.TabularInline):
         
     def get_formset(self, request, obj=None, **kwargs):
         FormSet = super(MultilingualInlineAdmin, self).get_formset(request, obj, **kwargs)
-        FormSet.use_language = self.use_language
+        FormSet.use_language = GLL.language_code
         FormSet.ml_fields = {}
-        for name, field in get_translated_fields(self.model, self.use_language):
+        for name, field in get_translated_fields(self.model, GLL.language_code):
             fieldname = '%s%s' % (MULTILINGUAL_INLINE_PREFIX, name)
             FormSet.form.base_fields[fieldname] = self.formfield_for_dbfield(field, request=request)
             FormSet.ml_fields[name] = fieldname
@@ -164,13 +165,15 @@ class MultilingualInlineAdmin(admin.TabularInline):
         Filter objects which don't have a value in this language
         """
         qs = super(MultilingualInlineAdmin, self).queryset(request)
-        checkfield = self.get_fill_check_field()
-        if checkfield is not None:
-            kwargs = {str('%s_%s__isnull' % (checkfield, GLL.language_code)): False}
-            from django.db.models.fields import CharField
-            if isinstance(self.model._meta.translation_model._meta.get_field_by_name(checkfield)[0], CharField):
-                kwargs[str('%s_%s__gt' % (checkfield, GLL.language_code))] = ''
-            return qs.filter(**kwargs)
+        # Don't now what the hell I was thinking here, but this code breaks stuff:
+        #
+        # checkfield = self.get_fill_check_field()
+        # if checkfield is not None:
+        #     kwargs = {str('%s_%s__isnull' % (checkfield, GLL.language_code)): False}
+        #     from django.db.models.fields import CharField
+        #     if isinstance(self.model._meta.translation_model._meta.get_field_by_name(checkfield)[0], CharField):
+        #         kwargs[str('%s_%s__gt' % (checkfield, GLL.language_code))] = ''
+        #     return qs.filter(**kwargs)
         return qs
     
     def get_fill_check_field(self):
@@ -294,7 +297,7 @@ class MultilingualModelAdmin(admin.ModelAdmin):
         # assign language to inlines, so they now how to render
         for inline in self.inline_instances:
             if isinstance(inline, MultilingualInlineAdmin):
-                inline.use_language = self.use_language
+                inline.use_language = GLL.language_code
         
         Form = super(MultilingualModelAdmin, self).get_form(request, obj, **kwargs)
         
@@ -303,10 +306,10 @@ class MultilingualModelAdmin(admin.ModelAdmin):
             if not field.editable:
                 continue
             form_field = self.formfield_for_dbfield(field, request=request)
-            local_name = "%s_%s" % (name, self.use_language)
+            local_name = "%s_%s" % (name, GLL.language_code)
             Form.ml_fields[name] = form_field
             Form.base_fields[name] = form_field
-            Form.use_language = self.use_language
+            Form.use_language = GLL.language_code
         return Form
     
     def placeholder_plugin_filter(self, request, queryset):
@@ -342,8 +345,8 @@ class MultilingualModelAdmin(admin.ModelAdmin):
                 kwargs['%s__gt' % fill_check_field] = ''
             filled_languages = [t[0] for t in obj.translations.filter(**kwargs).values_list('language_code')]
         context.update({
-            'current_language_index': self.use_language,
-            'current_language_code': self.use_language,
+            'current_language_index': GLL.language_code,
+            'current_language_code': GLL.language_code,
             'filled_languages': filled_languages,
             'old_template': self.get_old_template(),
         })

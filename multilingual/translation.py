@@ -117,9 +117,9 @@ def getter_generator(field_name, short_description):
     """
     def get_translation_field(cls, language_code=None, fallback=False):
         try:
-            return getattr(cls.get_translation(language_code,
-                                               fallback=fallback),
-                           field_name)
+            return cls.get_translation(language_code,
+                                       fallback=fallback,
+                                       field=field_name)
         except TranslationDoesNotExist:
             return None
     get_translation_field.short_description = short_description
@@ -136,7 +136,7 @@ def setter_generator(field_name):
     return set_translation_field
 
 def get_translation(cls, language_code, create_if_necessary=False,
-                    fallback=False):
+                    fallback=False, field=None):
     """
     Get a translation instance for the given `language_id_or_code`.
 
@@ -162,7 +162,12 @@ def get_translation(cls, language_code, create_if_necessary=False,
         force = True
 
     if language_code in cls._translation_cache:
-        return cls._translation_cache.get(language_code, None)
+        transobj = cls._translation_cache.get(language_code, None)
+        if field is None:
+            return transobj    
+        value = getattr(transobj, field)
+        if value or force or (not fallback):
+            return value
 
     if create_if_necessary:
         new_translation = cls._meta.translation_model(master=cls,
@@ -172,9 +177,14 @@ def get_translation(cls, language_code, create_if_necessary=False,
     # only fall backif we're not in 'force' mode (GLL)
     elif (not force) and fallback:
         for fb_lang_code in get_fallbacks(language_code):
-            trans = cls._translation_cache.get(fb_lang_code, None)
-            if trans:
-                return trans
+            transobj = cls._translation_cache.get(fb_lang_code, None)
+            if transobj:
+                if field is None:
+                    return transobj
+                else:
+                    value = getattr(transobj, field)
+                    if value:
+                        return value
     raise TranslationDoesNotExist(language_code)
 
 class TranslationModel(object):
