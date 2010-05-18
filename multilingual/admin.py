@@ -273,6 +273,8 @@ class MultilingualModelAdmin(admin.ModelAdmin):
     use_language = None
     
     fill_check_field = None
+    
+    _use_hacks = ['fieldsets', 'prepopulated_fields', 'readonly_fields']
 
     class Media:
         css = {
@@ -280,12 +282,9 @@ class MultilingualModelAdmin(admin.ModelAdmin):
         }
     
     def __init__(self, model, admin_site):
-        if hasattr(self, 'use_fieldsets'):
-            # go around admin fieldset structure validation
-            self.fieldsets = self.use_fieldsets
-        if hasattr(self, 'use_prepopulated_fields'):
-            # go around admin fieldset structure validation
-            self.prepopulated_fields = self.use_prepopulated_fields
+        for attr in self._use_hacks:
+            if hasattr(self, 'use_%s' % attr):
+                setattr(self, attr, getattr(self, 'use_%s' % attr))
         super(MultilingualModelAdmin, self).__init__(model, admin_site)
     
     def get_fill_check_field(self):
