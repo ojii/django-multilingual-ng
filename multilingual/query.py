@@ -596,4 +596,4 @@ class MultilingualModelQuerySet(QuerySet):
         for field in fields:
             if field not in self._get_all_field_names():
                 raise NotImplementedError("Multilingual fields cannot be queried using queryset.values(...)")
-        return super(MultilingualModelQuerySet, self).values(*fields, **kwargs)
+        return super(MultilingualModelQuerySet, self).values_list(*fields, **kwargs)

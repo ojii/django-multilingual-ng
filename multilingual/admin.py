@@ -387,7 +387,10 @@ class MultilingualModelAdmin(admin.ModelAdmin):
 def get_translated_fields(model, language=None):
     meta = model._meta
     if not hasattr(meta, 'translated_fields'):
-        meta = meta.translation_model._meta
+        if hasattr(meta, 'translation_model'):
+            meta = meta.translation_model._meta
+        else:
+            return
     # returns all the translatable fields, except of the default ones
     if not language:
         for name, (field, non_default) in meta.translated_fields.items():
