@@ -47,8 +47,12 @@ def fill_translation_cache(instance):
     if hasattr(instance, '_translation_cache'):
         # do not refill the cache
         return
-
     instance._translation_cache = {}
+
+    # unsafed instances cannot have translations
+    if not instance.pk:
+        return
+
     for language_code in get_language_code_list():
         # see if translation for language_code was in the query
         field_alias = get_translated_field_alias('code', language_code)
