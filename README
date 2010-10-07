@@ -12,7 +12,3 @@ django-multilingual without having to change any code in your apps.
 Note that since multilingual-ng does not use language_id's anymore, you'll have
 to use the mlng_convert command to migrate your old apps to ng. For this you
 need south installed.
-
-DJANGO-MULTILINGUAL-NG DOES NOT WORK WITH DJANGO TRUNK AS OF DJANGO r12502!
-This issue will be resolved as soon as a new official Django package is
-released.
