@@ -2,17 +2,4 @@
 Django Multilingual-NG
 ======================
 
-Django-multilingual-ng is a branch of django-multilingual, compatible with 
-Django 1.2 (Beta 1) as well as providing admin UI improvements.
-
-multilingual-ng tries to be compatible with django-multilingual whenever
-possible. In the best case you can just replace django-multilingual-ng with
-django-multilingual without having to change any code in your apps.
-
-Note that since multilingual-ng does not use language_id's anymore, you'll have
-to use the mlng_convert command to migrate your old apps to ng. For this you
-need south installed.
-
-DJANGO-MULTILINGUAL-NG DOES NOT WORK WITH DJANGO TRUNK AS OF DJANGO r12502!
-This issue will be resolved as soon as a new official Django package is
-released.
+THIS PROJECT IS NOT SUPPORTED AND SHOULD NOT BE USED UNLESS YOU KNOW EXACTLY WHAT YOU ARE DOING!!!
