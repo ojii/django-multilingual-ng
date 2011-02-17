@@ -77,10 +77,13 @@ class MultilingualQuery(Query):
         return super(MultilingualQuery, self).clone(klass=klass, **defaults)
 
     def add_filter(self, filter_expr, connector=AND, negate=False, trim=False,
-            can_reuse=None, process_extras=True):
+            can_reuse=None, process_extras=True, force_having=False):
         """
         Copied from add_filter to generate WHERES for translation fields.
         """
+        if force_having:
+            import warnings
+            warnings.warn("multilingual-ng doesn't support force_having (see Django ticket #11293)")
         arg, value = filter_expr
         parts = arg.split(LOOKUP_SEP)
         if not parts:
